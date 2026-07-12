@@ -8,6 +8,7 @@ import {
   SAFETY_STATUS_STYLE,
 } from "../constants/drivers.js";
 import AddDriverForm from "../components/AddDriverForm.jsx";
+import Pagination from "../components/shared/Pagination.jsx";
 import { getDrivers, createDriver } from "../services/driverService.js";
 
 // ── Filter Select (same as Dashboard/Fleet) ─────────────
@@ -37,6 +38,10 @@ function Drivers() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchDrivers();
@@ -109,6 +114,17 @@ function Drivers() {
       return matchCategory && matchStatus && matchSearch;
     });
   }, [drivers, categoryFilter, statusFilter, searchQuery]);
+
+  // Reset to page 1 on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, statusFilter, searchQuery]);
+
+  // Slice for pagination
+  const paginatedDrivers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, currentPage]);
 
   return (
     <div className="flex flex-col gap-5 min-h-full">
@@ -201,8 +217,8 @@ function Drivers() {
                     {error}
                   </td>
                 </tr>
-              ) : filtered.length > 0 ? (
-                filtered.map((d) => {
+              ) : paginatedDrivers.length > 0 ? (
+                paginatedDrivers.map((d) => {
                   // Derive safety status from score
                   const safetyStatus = d.safetyScore >= 90 ? "Excellent" :
                     d.safetyScore >= 75 ? "Good" :
@@ -245,6 +261,14 @@ function Drivers() {
             </tbody>
           </table>
         </div>
+
+        {/* ── Pagination ───────────────────────────── */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
 
         {/* ── Footer Rule Note ─────────────────────── */}
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">
