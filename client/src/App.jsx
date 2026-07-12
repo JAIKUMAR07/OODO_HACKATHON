@@ -10,6 +10,7 @@ import Maintenance from "./pages/Maintenance.jsx";
 import FuelExpenses from "./pages/FuelExpenses.jsx";
 import Analytics from "./pages/Analytics.jsx";
 import Settings from "./pages/Settings.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
@@ -30,8 +31,9 @@ function App() {
       <BrowserRouter>
         <Routes>
         {/* ── Auth routes (no sidebar) ──────────────── */}
-        <Route path="/login"  element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* ── App routes (with sidebar via AppLayout) ── */}
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -41,8 +43,8 @@ function App() {
           <Route path="/trips"         element={<Trips />} />
           <Route path="/maintenance"   element={<Maintenance />} />
           <Route path="/fuel-expenses" element={<FuelExpenses />} />
-          <Route path="/analytics"     element={<Analytics />} />
-          <Route path="/settings"      element={<Settings />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         {/* ── Fallback ─────────────────────────────── */}

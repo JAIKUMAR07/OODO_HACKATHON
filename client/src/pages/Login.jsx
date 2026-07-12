@@ -14,9 +14,8 @@ function Login() {
     const [role, setRole] = useState("DRIVER"); // Map Dispatcher to DRIVER
     const [rememberMe, setRememberMe] = useState(true);
 
-    // States for password visibility, submission, success and error popup
     const [showPassword, setShowPassword] = useState(false);
-    const [showError, setShowError] = useState(false); // Initially false (no error on load)
+    const [showError, setShowError] = useState(false);
     const [errorText, setErrorText] = useState("");
     const [lockoutText, setLockoutText] = useState("");
     const [loading, setLoading] = useState(false);
@@ -155,7 +154,7 @@ function Login() {
                                 </div>
                                     <a href="#forgot" className="text-blue-500 hover:underline font-semibold">
                                         Forgot password?
-                                    </a>
+                                    </Link>
                                 </div>
 
                                 {/* Submit button */}
