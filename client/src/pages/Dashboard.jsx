@@ -65,13 +65,14 @@ function FilterSelect({ label, options, value, onChange }) {
         className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o}>{label}: {o}</option>
+          <option key={o} value={o}>{label}: {o}</option>
         ))}
       </select>
       <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
     </div>
   );
 }
+
 
 // ── Dashboard ──────────────────────────────────────
 function Dashboard() {

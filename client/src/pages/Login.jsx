@@ -152,31 +152,31 @@ function Login() {
                                         Remember me
                                     </label>
                                 </div>
-                                    <a href="#forgot" className="text-blue-500 hover:underline font-semibold">
-                                        Forgot password?
-                                    </a>
-                                </div>
+                                <Link to="/forgot-password" className="text-blue-500 hover:underline font-semibold">
+                                    Forgot password?
+                                </Link>
+                            </div>
 
-                                {/* Submit button */}
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-[#9a5b00] hover:bg-[#b46a00] active:bg-[#804b00] disabled:opacity-70 transition-colors rounded-xl py-3 text-white text-center font-bold tracking-wide shadow-md focus:outline-none"
+                            {/* Submit button */}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-[#9a5b00] hover:bg-[#b46a00] active:bg-[#804b00] disabled:opacity-70 transition-colors rounded-xl py-3 text-white text-center font-bold tracking-wide shadow-md focus:outline-none"
+                            >
+                                {loading ? "Signing In..." : "Sign In"}
+                            </button>
+
+                            {/* Switch to Sign Up */}
+                            <p className="text-center text-sm text-slate-500 mt-2">
+                                Don't have an account?{" "}
+                                <Link
+                                    to="/signup"
+                                    className="text-blue-500 hover:underline font-semibold focus:outline-none"
                                 >
-                                    {loading ? "Signing In..." : "Sign In"}
-                                </button>
-
-                                {/* Switch to Sign Up */}
-                                <p className="text-center text-sm text-slate-500 mt-2">
-                                    Don't have an account?{" "}
-                                    <Link
-                                        to="/signup"
-                                        className="text-blue-500 hover:underline font-semibold focus:outline-none"
-                                    >
-                                        Sign up
-                                    </Link>
-                                </p>
-                            </form>
+                                    Sign up
+                                </Link>
+                            </p>
+                        </form>
                     </div>
 
                 </div>
