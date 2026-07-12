@@ -10,30 +10,45 @@ function Login() {
     const [role, setRole] = useState("DRIVER"); // Map Dispatcher to DRIVER
     const [rememberMe, setRememberMe] = useState(true);
 
-    // States for password visibility, submission, success and error popup
     const [showPassword, setShowPassword] = useState(false);
-    const [showError, setShowError] = useState(false); // Initially false (no error on load)
+    const [showError, setShowError] = useState(false);
     const [errorText, setErrorText] = useState("");
     const [lockoutText, setLockoutText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginSuccess, setLoginSuccess] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setShowError(false);
 
-        // Simulate authentication
-        setTimeout(() => {
-            setIsSubmitting(false);
-            if (email === "Raven.k@transitops.in" && password === "password123") {
-                setLoginSuccess(true);
-            } else {
-                setErrorText("Invalid credentials.");
-                setLockoutText("Account locked after 5 failed attempts.");
-                setShowError(true);
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Login failed.");
             }
-        }, 1000);
+
+            // Store authentication details
+            localStorage.setItem("transitops_token", data.token);
+            localStorage.setItem("transitops_user", JSON.stringify(data.user));
+
+            setLoginSuccess(true);
+            setTimeout(() => {
+                window.location.href = "/dashboard";
+            }, 1000);
+        } catch (err) {
+            setErrorText(err.message);
+            setLockoutText("Please verify your email and password.");
+            setShowError(true);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -168,9 +183,9 @@ function Login() {
                                             Remember me
                                         </label>
                                     </div>
-                                    <a href="#forgot" className="text-blue-500 hover:underline font-semibold">
+                                    <Link to="/forgot-password" className="text-blue-500 hover:underline font-semibold">
                                         Forgot password?
-                                    </a>
+                                    </Link>
                                 </div>
 
                                 {/* Submit button */}
