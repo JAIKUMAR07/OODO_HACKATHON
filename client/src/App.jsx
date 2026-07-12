@@ -4,6 +4,8 @@ import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Fleet from "./pages/Fleet.jsx";
+import Drivers from "./pages/Drivers.jsx";
+import Trips from "./pages/Trips.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 
 function App() {
@@ -18,8 +20,8 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/fleet"         element={<Fleet />} />
-          <Route path="/drivers"       element={<PlaceholderPage title="Drivers" />} />
-          <Route path="/trips"         element={<PlaceholderPage title="Trips" />} />
+          <Route path="/drivers"       element={<Drivers />} />
+          <Route path="/trips"         element={<Trips />} />
           <Route path="/maintenance"   element={<PlaceholderPage title="Maintenance" />} />
           <Route path="/fuel-expenses" element={<PlaceholderPage title="Fuel & Expenses" />} />
           <Route path="/analytics"     element={<PlaceholderPage title="Analytics" />} />
