@@ -7,6 +7,7 @@ import {
   VEHICLE_STATUS_STYLE,
 } from "../constants/fleet.js";
 import AddVehicleForm from "../components/AddVehicleForm.jsx";
+import Pagination from "../components/shared/Pagination.jsx";
 import { getVehicles, createVehicle } from "../services/vehicleService.js";
 
 // ── Filter Select (same as Dashboard) ─────────────
@@ -36,6 +37,10 @@ function Fleet() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery,  setSearchQuery]  = useState("");
   const [drawerOpen,   setDrawerOpen]   = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchVehicles();
@@ -85,6 +90,17 @@ function Fleet() {
       return matchType && matchStatus && matchSearch;
     });
   }, [vehicles, typeFilter, statusFilter, searchQuery]);
+
+  // Reset to page 1 on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [typeFilter, statusFilter, searchQuery]);
+
+  // Slice for pagination
+  const paginatedVehicles = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, currentPage]);
 
   return (
     <div className="flex flex-col gap-5 min-h-full">
@@ -176,8 +192,8 @@ function Fleet() {
                     {error}
                   </td>
                 </tr>
-              ) : filtered.length > 0 ? (
-                filtered.map((v) => (
+              ) : paginatedVehicles.length > 0 ? (
+                paginatedVehicles.map((v) => (
                   <tr key={v.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
                     <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-600">{v.registrationNumber}</td>
                     <td className="px-5 py-3.5 font-medium text-slate-800">{v.name}</td>
@@ -207,6 +223,14 @@ function Fleet() {
             </tbody>
           </table>
         </div>
+
+        {/* ── Pagination ───────────────────────────── */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
 
         {/* ── Footer Rule Note ─────────────────────── */}
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">
