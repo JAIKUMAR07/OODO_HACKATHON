@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Fleet from "./pages/Fleet.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
         {/* ── App routes (with sidebar via AppLayout) ── */}
         <Route element={<AppLayout />}>
           <Route path="/dashboard"     element={<Dashboard />} />
-          <Route path="/fleet"         element={<PlaceholderPage title="Fleet" />} />
+          <Route path="/fleet"         element={<Fleet />} />
           <Route path="/drivers"       element={<PlaceholderPage title="Drivers" />} />
           <Route path="/trips"         element={<PlaceholderPage title="Trips" />} />
           <Route path="/maintenance"   element={<PlaceholderPage title="Maintenance" />} />
