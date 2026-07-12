@@ -154,7 +154,7 @@ function Login() {
                                 </div>
                                     <a href="#forgot" className="text-blue-500 hover:underline font-semibold">
                                         Forgot password?
-                                    </Link>
+                                    </a>
                                 </div>
 
                                 {/* Submit button */}
