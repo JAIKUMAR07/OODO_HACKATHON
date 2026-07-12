@@ -5,11 +5,10 @@ import vehicleRoutes from "./src/routes/vehicle.routes.js";
 import dashboardRoutes from "./src/routes/dashboard.routes.js";
 import tripRoutes from "./src/routes/trip.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
-
-import driverRoutes from "./src/routes/driver.routes.js";
 import maintenanceRoutes from "./src/routes/maintenance.routes.js";
 import expenseRoutes from "./src/routes/expense.routes.js";
 import settingsRoutes from "./src/routes/settings.routes.js";
+import reportsRoutes from "./src/routes/reports.routes.js";
 
 
 const app = express();
@@ -23,10 +22,10 @@ app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/trips", tripRoutes);
 app.use("/api/drivers", driverRoutes);
-app.use("/api/drivers", driverRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/reports", reportsRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
@@ -36,7 +35,7 @@ app.get("/", (req, res) => {
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.isOperational ? err.message : "Internal Server Error";
-  
+
   if (!err.isOperational) {
     console.error(err);
   }
