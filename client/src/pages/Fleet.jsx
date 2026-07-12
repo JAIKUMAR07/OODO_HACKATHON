@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from "react";
-import { ChevronDown, Search, Plus, Truck } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { ChevronDown, Search, Plus, Truck, AlertCircle } from "lucide-react";
 import {
   FLEET_TYPE_OPTIONS,
   FLEET_STATUS_OPTIONS,
   FLEET_STATS,
-  FLEET_VEHICLES,
   VEHICLE_STATUS_STYLE,
 } from "../constants/fleet.js";
 import AddVehicleForm from "../components/AddVehicleForm.jsx";
+import { getVehicles, createVehicle } from "../services/vehicleService.js";
 
 // ── Filter Select (same as Dashboard) ─────────────
 function FilterSelect({ label, options, value, onChange }) {
@@ -29,23 +29,59 @@ function FilterSelect({ label, options, value, onChange }) {
 
 // ── Fleet Page ─────────────────────────────────────
 function Fleet() {
-  const [vehicles,     setVehicles]     = useState(FLEET_VEHICLES);
+  const [vehicles,     setVehicles]     = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
   const [typeFilter,   setTypeFilter]   = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery,  setSearchQuery]  = useState("");
   const [drawerOpen,   setDrawerOpen]   = useState(false);
 
-  function handleAddVehicle(newVehicle) {
-    setVehicles((prev) => [...prev, newVehicle]);
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    setLoading(true);
+    try {
+      const data = await getVehicles();
+      setVehicles(data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load vehicles.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function handleAddVehicle(newVehicle) {
+    try {
+      // Map UI form fields to Prisma schema fields
+      const payload = {
+        registrationNumber: newVehicle.regNo,
+        name: newVehicle.name,
+        type: newVehicle.type,
+        maxLoadCapacity: parseFloat(newVehicle.capacity) || 0,
+        odometer: parseFloat(newVehicle.odometer) || 0,
+        acquisitionCost: parseFloat(newVehicle.acqCost) || 0,
+      };
+      
+      const createdVehicle = await createVehicle(payload);
+      setVehicles((prev) => [createdVehicle, ...prev]);
+    } catch (err) {
+      console.error("Failed to add vehicle:", err);
+      alert("Error adding vehicle: " + (err.response?.data?.message || err.message));
+    }
   }
 
   // Derived: filtered rows
   const filtered = useMemo(() => {
     return vehicles.filter((v) => {
-      const matchType   = typeFilter   === "All" || v.type   === typeFilter;
-      const matchStatus = statusFilter === "All" || v.status === statusFilter;
-      const matchSearch = v.regNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          v.name.toLowerCase().includes(searchQuery.toLowerCase());
+      // Prisma uses UPPERCASE for enums usually, but let's compare case-insensitively
+      const matchType   = typeFilter   === "All" || v.type?.toLowerCase() === typeFilter.toLowerCase();
+      const matchStatus = statusFilter === "All" || v.status?.replace("_", " ")?.toLowerCase() === statusFilter.toLowerCase();
+      const matchSearch = v.registrationNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          v.name?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchType && matchStatus && matchSearch;
     });
   }, [vehicles, typeFilter, statusFilter, searchQuery]);
@@ -127,18 +163,36 @@ function Fleet() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-400">
+                    Loading vehicles...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-red-500">
+                    <AlertCircle className="inline-block mr-2" size={16} />
+                    {error}
+                  </td>
+                </tr>
+              ) : filtered.length > 0 ? (
                 filtered.map((v) => (
                   <tr key={v.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
-                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-600">{v.regNo}</td>
+                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-600">{v.registrationNumber}</td>
                     <td className="px-5 py-3.5 font-medium text-slate-800">{v.name}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{v.type}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{v.capacity}</td>
+                    <td className="px-5 py-3.5 text-slate-600 capitalize">{v.type?.toLowerCase()}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{v.maxLoadCapacity}</td>
                     <td className="px-5 py-3.5 text-slate-600">{v.odometer}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{v.acqCost}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{v.acquisitionCost}</td>
                     <td className="px-5 py-3.5">
-                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${VEHICLE_STATUS_STYLE[v.status]}`}>
-                        {v.status}
+                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${
+                        v.status === "AVAILABLE" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" :
+                        v.status === "ON_TRIP" ? "bg-blue-50 text-blue-600 border border-blue-200" :
+                        v.status === "IN_SHOP" ? "bg-amber-50 text-amber-600 border border-amber-200" :
+                        "bg-slate-50 text-slate-600 border border-slate-200"
+                      }`}>
+                        {v.status?.replace("_", " ")}
                       </span>
                     </td>
                   </tr>

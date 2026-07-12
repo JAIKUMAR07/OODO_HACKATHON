@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Droplet } from "lucide-react";
 
 const EMPTY_FORM = {
-  vehicle: "",
-  date: "",
+  vehicleId: "",
   liters: "",
   cost: "",
 };
@@ -23,7 +22,7 @@ function Field({ label, required, children }) {
 const inputCls =
   "w-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-colors";
 
-function LogFuelForm({ isOpen, onClose, onSave }) {
+function LogFuelForm({ isOpen, onClose, onSave, vehicles = [] }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
@@ -41,10 +40,9 @@ function LogFuelForm({ isOpen, onClose, onSave }) {
 
   function validate() {
     const errs = {};
-    if (!form.vehicle.trim()) errs.vehicle = "Vehicle is required.";
-    if (!form.date.trim()) errs.date = "Date is required.";
-    if (!form.liters.trim()) errs.liters = "Liters is required.";
-    if (!form.cost.trim()) errs.cost = "Cost is required.";
+    if (!form.vehicleId) errs.vehicleId = "Vehicle is required.";
+    if (!form.liters) errs.liters = "Liters is required.";
+    if (!form.cost) errs.cost = "Cost is required.";
     return errs;
   }
 
@@ -55,11 +53,7 @@ function LogFuelForm({ isOpen, onClose, onSave }) {
       setErrors(errs);
       return;
     }
-    onSave({
-      ...form,
-      id: `f${Date.now()}`,
-      liters: `${form.liters} L`,
-    });
+    onSave(form);
     onClose();
   }
 
@@ -98,25 +92,22 @@ function LogFuelForm({ isOpen, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
           <div className="flex flex-col gap-5 px-6 py-5">
             <Field label="Vehicle" required>
-              <input
-                type="text"
-                value={form.vehicle}
-                onChange={(e) => handleChange("vehicle", e.target.value)}
-                className={inputCls}
-                placeholder="e.g. VAN-05"
-              />
-              {errors.vehicle && <p className="text-[11px] text-red-500 font-medium">{errors.vehicle}</p>}
-            </Field>
-
-            <Field label="Date" required>
-              <input
-                type="text"
-                value={form.date}
-                onChange={(e) => handleChange("date", e.target.value)}
-                className={inputCls}
-                placeholder="e.g. 05 Jul 2026"
-              />
-              {errors.date && <p className="text-[11px] text-red-500 font-medium">{errors.date}</p>}
+              <div className="relative">
+                <select
+                  value={form.vehicleId}
+                  onChange={(e) => handleChange("vehicleId", e.target.value)}
+                  className={`${inputCls} appearance-none pr-7`}
+                >
+                  <option value="">Select a vehicle...</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} ({v.registrationNumber})
+                    </option>
+                  ))}
+                </select>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
+              </div>
+              {errors.vehicleId && <p className="text-[11px] text-red-500 font-medium">{errors.vehicleId}</p>}
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
