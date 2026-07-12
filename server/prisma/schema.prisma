@@ -12,6 +12,7 @@ generator client {
 
 enum Role {
   FLEET_MANAGER
+  DISPATCHER
   DRIVER
   SAFETY_OFFICER
   FINANCIAL_ANALYST
@@ -124,7 +125,7 @@ model Trip {
   destination     String
   cargoWeight     Float      // must be <= vehicle.maxLoadCapacity, checked in app layer
   plannedDistance Float
-  actualDistance  Float?
+  
 
   startOdometer   Float?
   endOdometer     Float?

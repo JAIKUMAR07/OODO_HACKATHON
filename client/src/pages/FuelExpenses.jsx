@@ -3,6 +3,7 @@ import { EXPENSE_STATUS_STYLE } from "../constants/fuel.js";
 import { Plus, RefreshCw } from "lucide-react";
 import LogFuelForm from "../components/LogFuelForm.jsx";
 import AddExpenseForm from "../components/AddExpenseForm.jsx";
+import Pagination from "../components/shared/Pagination.jsx";
 import { getVehicles } from "../services/vehicleService.js";
 import { getTrips } from "../services/tripService.js";
 import { getFuelLogs, createFuelLog, getExpenses, createExpense } from "../services/expenseService.js";
@@ -16,6 +17,11 @@ function FuelExpenses() {
   
   const [fuelDrawerOpen, setFuelDrawerOpen] = useState(false);
   const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
+
+  // Pagination State
+  const [fuelPage, setFuelPage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchData();
@@ -74,6 +80,9 @@ function FuelExpenses() {
   const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
   const grandTotal = totalFuel + totalExpense;
 
+  const paginatedFuel = fuelLogs.slice((fuelPage - 1) * itemsPerPage, fuelPage * itemsPerPage);
+  const paginatedExpenses = expenses.slice((expensePage - 1) * itemsPerPage, expensePage * itemsPerPage);
+
   return (
     <div className="flex flex-col gap-6 min-h-full">
       {/* ── Page Header ──────────────────────────── */}
@@ -117,9 +126,9 @@ function FuelExpenses() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm">Loading fuel logs...</td></tr>
-                ) : fuelLogs.length === 0 ? (
+                ) : paginatedFuel.length === 0 ? (
                   <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm border border-dashed border-slate-200">No fuel logs found</td></tr>
-                ) : fuelLogs.map((log) => (
+                ) : paginatedFuel.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-3.5 font-medium text-slate-800">{log.vehicle?.name || "Unknown"}</td>
                     <td className="px-5 py-3.5 text-slate-600">{new Date(log.createdAt).toLocaleDateString()}</td>
@@ -130,6 +139,15 @@ function FuelExpenses() {
               </tbody>
             </table>
           </div>
+          {/* ── Fuel Pagination ── */}
+          {fuelLogs.length > 0 && (
+            <Pagination
+              currentPage={fuelPage}
+              totalItems={fuelLogs.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setFuelPage}
+            />
+          )}
         </div>
       </div>
 
@@ -153,9 +171,9 @@ function FuelExpenses() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm">Loading expenses...</td></tr>
-                ) : expenses.length === 0 ? (
+                ) : paginatedExpenses.length === 0 ? (
                   <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm border border-dashed border-slate-200">No expenses found</td></tr>
-                ) : expenses.map((exp) => (
+                ) : paginatedExpenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-500">{exp.tripId ? `#${exp.tripId.slice(-6)}` : "-"}</td>
                     <td className="px-5 py-3.5 font-medium text-slate-800">{exp.vehicle?.name || "-"}</td>
@@ -172,6 +190,15 @@ function FuelExpenses() {
               </tbody>
             </table>
           </div>
+          {/* ── Expense Pagination ── */}
+          {expenses.length > 0 && (
+            <Pagination
+              currentPage={expensePage}
+              totalItems={expenses.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setExpensePage}
+            />
+          )}
         </div>
       </div>
 

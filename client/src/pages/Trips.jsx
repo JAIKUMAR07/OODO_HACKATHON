@@ -4,6 +4,7 @@ import {
   TRIP_STATUS_STYLE 
 } from "../constants/trips.js";
 import { X, Check, RefreshCw } from "lucide-react";
+import Pagination from "../components/shared/Pagination.jsx";
 import { getVehicles } from "../services/vehicleService.js";
 import { getDrivers } from "../services/driverService.js";
 import { getTrips, createDraftTrip, assignTrip, dispatchTrip } from "../services/tripService.js";
@@ -29,6 +30,10 @@ function Trips() {
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
   const [error, setError] = useState(null);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
@@ -62,6 +67,11 @@ function Trips() {
       setLoading(false);
     }
   };
+
+  const paginatedTrips = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return trips.slice(startIndex, startIndex + itemsPerPage);
+  }, [trips, currentPage]);
 
   const handleDispatch = async () => {
     setDispatching(true);
@@ -230,10 +240,10 @@ function Trips() {
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2">
               {loading ? (
                 <div className="p-8 text-center text-slate-400 text-sm">Loading live board...</div>
-              ) : trips.length === 0 ? (
+              ) : paginatedTrips.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-sm border border-dashed border-slate-200">No active trips currently.</div>
               ) : (
-                trips.map((trip) => (
+                paginatedTrips.map((trip) => (
                   <div key={trip.id} className="bg-white border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-amber-200">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
@@ -261,6 +271,16 @@ function Trips() {
               )}
             </div>
             
+            {/* ── Pagination ───────────────────────────── */}
+            {trips.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalItems={trips.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            )}
+
             <div className="mt-4 pt-4 border-t border-slate-200">
               <p className="text-[11px] text-slate-500 font-medium">
                 On Complete: odometer → fuel log → expenses → Vehicle & Driver Available

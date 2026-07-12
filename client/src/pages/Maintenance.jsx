@@ -3,6 +3,7 @@ import { MAINTENANCE_STATUS_STYLE } from "../constants/maintenance.js";
 import { ArrowRight, RefreshCw, CheckCircle } from "lucide-react";
 import { getVehicles } from "../services/vehicleService.js";
 import { getMaintenanceLogs, createMaintenanceLog, closeMaintenanceLog } from "../services/maintenanceService.js";
+import Pagination from "../components/shared/Pagination.jsx";
 
 // ── Reusable Field Wrapper ──────────────────────────
 function Field({ label, children }) {
@@ -23,6 +24,10 @@ function Maintenance() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const [vehicleId, setVehicleId] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -80,6 +85,11 @@ function Maintenance() {
       alert("Failed to close log: " + (err.response?.data?.message || err.message));
     }
   };
+
+  const paginatedLogs = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return logs.slice(startIndex, startIndex + itemsPerPage);
+  }, [logs, currentPage]);
 
   return (
     <div className="flex flex-col gap-6 min-h-full">
@@ -146,9 +156,9 @@ function Maintenance() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm">Loading logs...</td></tr>
-                  ) : logs.length === 0 ? (
+                  ) : paginatedLogs.length === 0 ? (
                     <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm">No maintenance logs found</td></tr>
-                  ) : logs.map((log) => (
+                  ) : paginatedLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-5 py-3.5 font-medium text-slate-800">{log.vehicle?.name || "Unknown"}</td>
                       <td className="px-5 py-3.5 text-slate-600">
@@ -177,6 +187,15 @@ function Maintenance() {
                 </tbody>
               </table>
             </div>
+            {/* ── Pagination ── */}
+            {logs.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalItems={logs.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            )}
           </div>
         </div>
 
