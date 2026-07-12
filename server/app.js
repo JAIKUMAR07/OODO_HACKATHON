@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./src/routes/auth.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import maintenanceRoutes from "./src/routes/maintenance.routes.js";
+import expenseRoutes from "./src/routes/expense.routes.js";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
+app.use("/api/expenses", expenseRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
