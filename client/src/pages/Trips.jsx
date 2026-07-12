@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { 
-  TRIP_LIFECYCLE_STEPS, 
-  TRIP_STATUS_STYLE 
+import {
+  TRIP_LIFECYCLE_STEPS,
+  TRIP_STATUS_STYLE
 } from "../constants/trips.js";
 import { X, Check, RefreshCw } from "lucide-react";
 import Pagination from "../components/shared/Pagination.jsx";
@@ -56,7 +56,7 @@ function Trips() {
       ]);
       setVehicles(vData.filter(v => v.status === "AVAILABLE"));
       setDrivers(dData.filter(d => d.status === "AVAILABLE"));
-      
+
       // Filter out completed/cancelled trips for the live board
       const liveTrips = tData.filter(t => t.status !== "COMPLETED" && t.status !== "CANCELLED");
       setTrips(liveTrips);
@@ -87,7 +87,7 @@ function Trips() {
       await assignTrip(draft.id, { vehicleId, driverId });
       // 3. Dispatch Trip
       await dispatchTrip(draft.id);
-      
+
       // Reset form
       setSource("");
       setDestination("");
@@ -95,7 +95,7 @@ function Trips() {
       setDriverId("");
       setCargoWeight("");
       setDistance("");
-      
+
       // Refresh Data
       fetchData();
     } catch (err) {
@@ -108,7 +108,7 @@ function Trips() {
 
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const weight = parseFloat(cargoWeight) || 0;
-  
+
   let capacityError = null;
   if (selectedVehicle && weight > selectedVehicle.maxLoadCapacity) {
     capacityError = {
@@ -129,11 +129,11 @@ function Trips() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        
+
         {/* ── Left Column: Create Trip Form ──────── */}
         <div className="w-full lg:w-[400px] shrink-0 flex flex-col gap-5">
           <h2 className="text-[11px] font-bold tracking-widest text-slate-500 uppercase">Create Trip</h2>
-          
+
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
             <Field label="Source">
               <input type="text" value={source} onChange={(e) => setSource(e.target.value)} className={inputCls} placeholder="e.g. Gandhinagar Depot" />
@@ -189,19 +189,18 @@ function Trips() {
 
             {/* Buttons */}
             <div className="flex items-center gap-3 mt-2">
-              <button 
+              <button
                 onClick={handleDispatch}
                 disabled={!isFormValid || dispatching}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-colors ${
-                  isFormValid && !dispatching
-                    ? "bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-white" 
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-colors ${isFormValid && !dispatching
+                    ? "bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-white"
                     : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                }`}
+                  }`}
               >
                 {dispatching && <RefreshCw size={14} className="animate-spin" />}
                 {dispatching ? "Dispatching..." : isFormValid ? "Dispatch" : "Dispatch (disabled)"}
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setSource(""); setDestination(""); setVehicleId(""); setDriverId(""); setCargoWeight(""); setDistance("");
                 }}
@@ -214,18 +213,18 @@ function Trips() {
 
         {/* ── Right Column: Lifecycle & Live Board ── */}
         <div className="flex-1 flex flex-col gap-5 min-w-0">
-          
+
           {/* Lifecycle Bar */}
           <div>
             <h2 className="text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-4">Trip Lifecycle</h2>
-            <div className="bg-white border border-slate-200 p-6 shadow-sm flex items-center justify-between relative">
+            <div className="bg-white border border-slate-200 p-4 sm:p-6 shadow-sm flex items-center justify-between relative overflow-hidden">
               {/* Connecting Line */}
-              <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-1 bg-slate-100 z-0" />
-              
+              <div className="absolute left-8 right-8 sm:left-10 sm:right-10 top-1/2 -translate-y-1/2 h-1 bg-slate-100 z-0" />
+
               {TRIP_LIFECYCLE_STEPS.map((step, idx) => (
-                <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                  <div className={`w-5 h-5 rounded-full ${step.color} shadow-sm border-2 border-white`} />
-                  <span className={`text-[10px] font-bold tracking-widest uppercase ${idx < 2 ? step.color.replace('bg-', 'text-') : 'text-slate-400'}`}>
+                <div key={step.id} className="relative z-10 flex flex-col items-center gap-1.5 sm:gap-2 flex-1">
+                  <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${step.color} shadow-sm border-2 border-white`} />
+                  <span className={`text-[8px] sm:text-[10px] text-center font-bold tracking-wider sm:tracking-widest uppercase wrap-break-word whitespace-normal leading-tight px-0.5 ${idx < 2 ? step.color.replace('bg-', 'text-') : 'text-slate-400'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -236,7 +235,7 @@ function Trips() {
           {/* Live Board */}
           <div className="flex-1 flex flex-col min-h-0">
             <h2 className="text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-3">Live Board</h2>
-            
+
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2">
               {loading ? (
                 <div className="p-8 text-center text-slate-400 text-sm">Loading live board...</div>
@@ -257,7 +256,7 @@ function Trips() {
                         {trip.source} <span className="text-slate-400">→</span> {trip.destination}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between md:flex-col md:items-end gap-2 md:gap-1.5 shrink-0">
                       <span className={`inline-block px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${TRIP_STATUS_STYLE[trip.status] || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
                         {trip.status}
@@ -270,7 +269,7 @@ function Trips() {
                 ))
               )}
             </div>
-            
+
             {/* ── Pagination ───────────────────────────── */}
             {trips.length > 0 && (
               <Pagination

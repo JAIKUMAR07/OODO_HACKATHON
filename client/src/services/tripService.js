@@ -1,7 +1,7 @@
 import api from "./api.js";
 
-export const getTrips = async () => {
-  const response = await api.get("/trips");
+export const getTrips = async (params = {}) => {
+  const response = await api.get("/trips", { params });
   return response.data.trips || [];
 };
 

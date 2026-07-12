@@ -14,11 +14,11 @@ import { getDrivers, createDriver } from "../services/driverService.js";
 // ── Filter Select (same as Dashboard/Fleet) ─────────────
 function FilterSelect({ label, options, value, onChange }) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
+        className="appearance-none w-full pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer truncate"
       >
         {options.map((o) => (
           <option key={o} value={o}>{label}: {o}</option>
@@ -138,15 +138,15 @@ function Drivers() {
       </div>
 
       {/* ── KPI Stats Row ─────────────────────────── */}
-      <div className="grid grid-cols-5 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {driverStats.map(({ label, value }) => (
-          <div key={label} className="bg-white p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-            <div className="bg-slate-100 p-2">
+          <div key={label} className="bg-white p-3.5 flex flex-col sm:flex-row items-start sm:items-center gap-3 hover:bg-slate-50 transition-colors border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-slate-100 p-2 shrink-0">
               <Users size={14} className="text-slate-500" />
             </div>
             <div>
-              <p className="text-[8.5px] font-bold tracking-widest uppercase text-slate-400 leading-tight">{label}</p>
-              <p className="text-2xl font-extrabold text-slate-900 leading-none">{value}</p>
+              <p className="text-[9px] font-bold tracking-wider uppercase text-slate-400 leading-tight wrap-break-word whitespace-normal">{label}</p>
+              <p className="text-2xl font-extrabold text-slate-900 leading-none mt-1 sm:mt-0">{value}</p>
             </div>
           </div>
         ))}
@@ -154,20 +154,20 @@ function Drivers() {
 
 
       {/* ── Filter Bar + Add Button ───────────────── */}
-      <div className="flex items-center gap-2 flex-wrap justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <FilterSelect label="Category" options={DRIVER_CATEGORY_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} />
-          <FilterSelect label="Status" options={DRIVER_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap justify-between">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Category" options={DRIVER_CATEGORY_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} /></div>
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Status" options={DRIVER_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} /></div>
 
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-[140px]">
             <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search name or license..."
-              className="pl-7 pr-3 py-1.5 border border-slate-200 bg-white text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-all w-52"
+              className="pl-7 pr-3 py-1.5 border border-slate-200 bg-white text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-all w-full sm:w-52"
             />
           </div>
         </div>
