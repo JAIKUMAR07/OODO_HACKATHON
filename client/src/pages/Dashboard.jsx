@@ -9,60 +9,19 @@ import {
 } from "../constants/dashboard.js";
 import { getDashboardKPIs, getVehicleStatus } from "../services/dashboardService.js";
 import { getTrips } from "../services/tripService.js";
+import VehicleStatusPieChart from "../components/charts/VehicleStatusPieChart.jsx";
 
 // ── Donut Chart ────────────────────────────────────
-function DonutChart({ data }) {
-  const totalVehicles = data.reduce((s, d) => s + d.count, 0) || 1; // avoid / 0
 
-  const CX = 60, CY = 60, R = 45, SW = 13;
-  const C = 2 * Math.PI * R;
-  const GAP = 2.5;
-  let cumAngle = -90;
-
-  return (
-    <svg width="140" height="140" viewBox="0 0 120 120" className="block mx-auto">
-      {/* Track */}
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f1f5f9" strokeWidth={SW} />
-      {/* Segments */}
-      {data.map((seg) => {
-        const fraction = seg.count / totalVehicles;
-        const length = fraction * C - GAP;
-        const rotate = cumAngle;
-        cumAngle += fraction * 360;
-        return (
-          <circle
-            key={seg.label}
-            cx={CX} cy={CY} r={R}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth={SW}
-            strokeDasharray={`${length} ${C - length}`}
-            transform={`rotate(${rotate} ${CX} ${CY})`}
-            strokeLinecap="butt"
-          />
-        );
-      })}
-      {/* Center */}
-      <text x={CX} y={CY - 5} textAnchor="middle"
-        style={{ fontSize: 20, fontWeight: 800, fill: "#0f172a", fontFamily: "Outfit, sans-serif" }}>
-        {totalVehicles}
-      </text>
-      <text x={CX} y={CY + 10} textAnchor="middle"
-        style={{ fontSize: 7.5, fontWeight: 700, fill: "#94a3b8", letterSpacing: 1, fontFamily: "Outfit, sans-serif" }}>
-        VEHICLES
-      </text>
-    </svg>
-  );
-}
 
 // ── Filter Select ──────────────────────────────────
 function FilterSelect({ label, options, value, onChange }) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
+        className="appearance-none w-full pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer truncate"
       >
         {options.map((o) => (
           <option key={o} value={o}>{label}: {o}</option>
@@ -77,14 +36,14 @@ function FilterSelect({ label, options, value, onChange }) {
 // ── Dashboard ──────────────────────────────────────
 function Dashboard() {
   const [vehicleType, setVehicleType] = useState("All");
-  const [status,      setStatus]      = useState("All");
-  const [region,      setRegion]      = useState("All");
+  const [status, setStatus] = useState("All");
+  const [region, setRegion] = useState("All");
 
   const [kpis, setKpis] = useState([]);
   const [recentTrips, setRecentTrips] = useState([]);
   const [vehicleStatusData, setVehicleStatusData] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   React.useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -96,13 +55,15 @@ function Dashboard() {
         getDashboardKPIs(),
         getVehicleStatus()
       ]);
-      
+
       const formattedKpis = [
-        { label: "Total Fleet", value: kpiData.totalVehicles, iconColor: "text-blue-500", iconBg: "bg-blue-50" },
-        { label: "Available", value: kpiData.availableVehicles, iconColor: "text-emerald-500", iconBg: "bg-emerald-50" },
-        { label: "On Trip", value: kpiData.onTripVehicles, iconColor: "text-amber-500", iconBg: "bg-amber-50" },
-        { label: "In Shop", value: kpiData.maintenanceVehicles, iconColor: "text-red-500", iconBg: "bg-red-50" },
-        { label: "Retired", value: kpiData.retiredVehicles, iconColor: "text-slate-500", iconBg: "bg-slate-50" },
+        { label: "Active Vehicles", value: kpiData.activeVehicles, borderClass: "bg-blue-500" },
+        { label: "Available Vehicles", value: kpiData.availableVehicles, borderClass: "bg-emerald-500" },
+        { label: "Vehicles in Maintenance", value: kpiData.maintenanceVehicles, borderClass: "bg-amber-500" },
+        { label: "Active Trips", value: kpiData.activeTrips, borderClass: "bg-blue-500" },
+        { label: "Pending Trips", value: kpiData.pendingTrips, borderClass: "bg-slate-400" },
+        { label: "Drivers on Duty", value: kpiData.driversOnDuty, borderClass: "bg-blue-500" },
+        { label: "Fleet Utilization", value: `${kpiData.fleetUtilization ?? 0}%`, borderClass: "bg-emerald-500" },
       ];
 
       // Donut chart expects { label, count, color }
@@ -139,50 +100,38 @@ function Dashboard() {
     <div className="flex flex-col gap-5 min-h-full">
 
       {/* ── Page Header + Inline Filters ─────────── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
           <p className="text-slate-500 text-xs mt-0.5">Real-time overview of your fleet operations.</p>
         </div>
-        {/* Filters — compact, right-aligned */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest self-center">Filters</span>
-          <FilterSelect label="Type"   options={VEHICLE_TYPES}  value={vehicleType} onChange={setVehicleType} />
-          <FilterSelect label="Status" options={TRIP_STATUSES}  value={status}      onChange={setStatus} />
-          <FilterSelect label="Region" options={REGIONS}        value={region}      onChange={setRegion} />
+        {/* Filters — compact, right-aligned on desktop */}
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+          <span className="hidden sm:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest self-center mr-1">Filters</span>
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Type" options={VEHICLE_TYPES} value={vehicleType} onChange={setVehicleType} /></div>
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Status" options={TRIP_STATUSES} value={status} onChange={setStatus} /></div>
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Region" options={REGIONS} value={region} onChange={setRegion} /></div>
         </div>
       </div>
 
-      {/* ── KPI Cards — Single row, 7 columns, sharp edges ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3 mb-2">
         {loading ? (
           <div className="col-span-full p-8 text-center text-sm text-slate-400">Loading KPIs...</div>
-        ) : kpis.map(({ label, value, icon, iconColor, iconBg }) => {
-          // Dynamic icon rendering is tricky with pure strings from DB, but assuming the backend passes something we can map,
-          // or we just render a default Icon if we don't have dynamic mapping.
-          // In the real app, we might map the icon string to a Lucide icon component. 
-          // For now, let's use a generic Circle if icon is a string, or just render it.
-          // Wait, the backend in dashboard.service.js actually returns strings for 'icon'. We need to map them to lucide icons!
-          let IconComp = Circle; // Fallback
-          // We can import them at the top, or just use a simple mapping here if needed.
-          
-          return (
-            <div
-              key={label}
-              className="bg-white p-4 flex flex-col gap-2 hover:bg-slate-50 transition-colors"
-            >
-              <div className={`${iconBg || 'bg-slate-100'} p-2 w-fit`}>
-                <IconComp size={14} className={iconColor || 'text-slate-500'} />
-              </div>
-              <p className="text-[8.5px] font-bold tracking-widest uppercase text-slate-400 leading-tight">
-                {label}
-              </p>
-              <p className="text-2xl font-extrabold text-slate-900 leading-none">
-                {value}
-              </p>
-            </div>
-          );
-        })}
+        ) : kpis.map(({ label, value, borderClass }) => (
+          <div
+            key={label}
+            className="bg-white p-3.5 flex flex-col justify-center relative border border-slate-200 shadow-sm"
+          >
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${borderClass}`} />
+            <p className="text-[9px] font-bold tracking-widest uppercase text-slate-400 leading-tight ml-1.5">
+              {label}
+            </p>
+            <p className="text-2xl font-extrabold text-slate-900 leading-none mt-2 ml-1.5">
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* ── Bottom: Trips Table + Vehicle Status ─── */}
@@ -268,7 +217,7 @@ function Dashboard() {
             <Circle size={14} className="text-slate-400" />
             <h2 className="text-[11px] font-bold tracking-widest text-slate-600 uppercase">Vehicle Status</h2>
           </div>
-          <DonutChart data={vehicleStatusData} />
+          <VehicleStatusPieChart data={vehicleStatusData} />
           <div className="flex flex-col gap-2.5 mt-5">
             {vehicleStatusData.map(({ label, count, color }) => (
               <div key={label} className="flex items-center justify-between">

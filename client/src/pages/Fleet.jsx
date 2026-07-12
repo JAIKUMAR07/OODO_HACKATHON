@@ -13,11 +13,11 @@ import { getVehicles, createVehicle } from "../services/vehicleService.js";
 // ── Filter Select (same as Dashboard) ─────────────
 function FilterSelect({ label, options, value, onChange }) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
+        className="appearance-none w-full pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer truncate"
       >
         {options.map((o) => (
           <option key={o} value={o}>{label}: {o}</option>
@@ -30,13 +30,13 @@ function FilterSelect({ label, options, value, onChange }) {
 
 // ── Fleet Page ─────────────────────────────────────
 function Fleet() {
-  const [vehicles,     setVehicles]     = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [typeFilter,   setTypeFilter]   = useState("All");
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [searchQuery,  setSearchQuery]  = useState("");
-  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,7 +70,7 @@ function Fleet() {
         odometer: parseFloat(newVehicle.odometer) || 0,
         acquisitionCost: parseFloat(newVehicle.acqCost) || 0,
       };
-      
+
       const createdVehicle = await createVehicle(payload);
       setVehicles((prev) => [createdVehicle, ...prev]);
     } catch (err) {
@@ -99,10 +99,10 @@ function Fleet() {
   const filtered = useMemo(() => {
     return vehicles.filter((v) => {
       // Prisma uses UPPERCASE for enums usually, but let's compare case-insensitively
-      const matchType   = typeFilter   === "All" || v.type?.toLowerCase() === typeFilter.toLowerCase();
+      const matchType = typeFilter === "All" || v.type?.toLowerCase() === typeFilter.toLowerCase();
       const matchStatus = statusFilter === "All" || v.status?.replace("_", " ")?.toLowerCase() === statusFilter.toLowerCase();
       const matchSearch = v.registrationNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          v.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        v.name?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchType && matchStatus && matchSearch;
     });
   }, [vehicles, typeFilter, statusFilter, searchQuery]);
@@ -130,15 +130,15 @@ function Fleet() {
       </div>
 
       {/* ── KPI Stats Row ─────────────────────────── */}
-      <div className="grid grid-cols-5 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {fleetStats.map(({ label, value }) => (
-          <div key={label} className="bg-white p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-            <div className="bg-slate-100 p-2">
+          <div key={label} className="bg-white p-3.5 flex flex-col sm:flex-row items-start sm:items-center gap-3 hover:bg-slate-50 transition-colors border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-slate-100 p-2 shrink-0">
               <Truck size={14} className="text-slate-500" />
             </div>
             <div>
-              <p className="text-[8.5px] font-bold tracking-widest uppercase text-slate-400 leading-tight">{label}</p>
-              <p className="text-2xl font-extrabold text-slate-900 leading-none">{value}</p>
+              <p className="text-[9px] font-bold tracking-wider uppercase text-slate-400 leading-tight wrap-break-word whitespace-normal">{label}</p>
+              <p className="text-2xl font-extrabold text-slate-900 leading-none mt-1 sm:mt-0">{value}</p>
             </div>
           </div>
         ))}
@@ -146,20 +146,20 @@ function Fleet() {
 
 
       {/* ── Filter Bar + Add Button ───────────────── */}
-      <div className="flex items-center gap-2 flex-wrap justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <FilterSelect label="Type"   options={FLEET_TYPE_OPTIONS}   value={typeFilter}   onChange={setTypeFilter} />
-          <FilterSelect label="Status" options={FLEET_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap justify-between">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Type" options={FLEET_TYPE_OPTIONS} value={typeFilter} onChange={setTypeFilter} /></div>
+          <div className="flex-1 min-w-[100px]"><FilterSelect label="Status" options={FLEET_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} /></div>
 
           {/* Reg. No. Search */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-[140px]">
             <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search reg. no. or name..."
-              className="pl-7 pr-3 py-1.5 border border-slate-200 bg-white text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-all w-52"
+              className="pl-7 pr-3 py-1.5 border border-slate-200 bg-white text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-all w-full sm:w-52"
             />
           </div>
         </div>
@@ -219,12 +219,11 @@ function Fleet() {
                     <td className="px-5 py-3.5 text-slate-600">{v.odometer}</td>
                     <td className="px-5 py-3.5 text-slate-600">{v.acquisitionCost}</td>
                     <td className="px-5 py-3.5">
-                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${
-                        v.status === "AVAILABLE" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" :
-                        v.status === "ON_TRIP" ? "bg-blue-50 text-blue-600 border border-blue-200" :
-                        v.status === "IN_SHOP" ? "bg-amber-50 text-amber-600 border border-amber-200" :
-                        "bg-slate-50 text-slate-600 border border-slate-200"
-                      }`}>
+                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${v.status === "AVAILABLE" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" :
+                          v.status === "ON_TRIP" ? "bg-blue-50 text-blue-600 border border-blue-200" :
+                            v.status === "IN_SHOP" ? "bg-amber-50 text-amber-600 border border-amber-200" :
+                              "bg-slate-50 text-slate-600 border border-slate-200"
+                        }`}>
                         {v.status?.replace("_", " ")}
                       </span>
                     </td>

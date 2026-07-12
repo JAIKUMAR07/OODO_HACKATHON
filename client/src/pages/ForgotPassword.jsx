@@ -29,6 +29,8 @@ export default function ForgotPassword() {
     }
   }, [step]);
 
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
   // Step 1: Send OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -36,7 +38,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setErrorText("");
     try {
-      const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+      const response = await fetch(`${API_BASE}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -64,7 +66,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setErrorText("");
     try {
-      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      const response = await fetch(`${API_BASE}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp: otpValue }),
@@ -94,7 +96,7 @@ export default function ForgotPassword() {
     setErrorText("");
     try {
       const otpValue = otp.join("");
-      const response = await fetch("http://localhost:5000/api/auth/reset-password", {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp: otpValue, newPassword }),
@@ -149,7 +151,7 @@ export default function ForgotPassword() {
 
         <div className="my-auto flex items-center justify-center w-full max-w-md self-center">
           <div className="w-full flex flex-col justify-center transition-all duration-300">
-            
+
             {/* Header */}
             <div className="mb-6">
               <div className="flex gap-1.5 mb-4">

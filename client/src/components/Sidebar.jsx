@@ -16,9 +16,9 @@ function Sidebar({ mobileOpen = false, onCloseMobile }) {
         background: "linear-gradient(to bottom right, #0c1328, #090d1a, #04060d)",
       }}
       className={`
-        relative flex flex-col shrink-0 h-screen border-r border-white/5
+        fixed lg:relative flex flex-col shrink-0 h-screen border-r border-white/5
         transition-all duration-300 ease-in-out z-50
-        fixed lg:static inset-y-0 left-0
+        inset-y-0 left-0
         ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${collapsed ? "w-[68px] lg:w-[68px]" : "w-[230px]"}
       `}

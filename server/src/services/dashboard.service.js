@@ -20,12 +20,30 @@ export const dashboardService = {
       if (item.status === "RETIRED") retiredVehicles = item._count._all;
     });
 
+    const activeVehicles = availableVehicles + onTripVehicles + maintenanceVehicles;
+
+    const activeTrips = await prisma.trip.count({
+      where: { status: "DISPATCHED" }
+    });
+
+    const pendingTrips = await prisma.trip.count({
+      where: { status: { in: ["DRAFT", "ASSIGNED"] } }
+    });
+
+    const driversOnDuty = await prisma.driver.count({
+      where: { status: { in: ["AVAILABLE", "ON_TRIP"] } }
+    });
+
+    const fleetUtilization = activeVehicles > 0 ? Math.round((onTripVehicles / activeVehicles) * 100) : 0;
+
     return {
-      totalVehicles,
+      activeVehicles,
       availableVehicles,
-      onTripVehicles,
       maintenanceVehicles,
-      retiredVehicles
+      activeTrips,
+      pendingTrips,
+      driversOnDuty,
+      fleetUtilization
     };
   },
 
