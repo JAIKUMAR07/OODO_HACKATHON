@@ -1,14 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ChevronDown, Search, Plus, Users } from "lucide-react";
 import {
   DRIVER_CATEGORY_OPTIONS,
   DRIVER_STATUS_OPTIONS,
   DRIVER_STATS,
-  DRIVERS,
   DRIVER_STATUS_STYLE,
   SAFETY_STATUS_STYLE,
 } from "../constants/drivers.js";
 import AddDriverForm from "../components/AddDriverForm.jsx";
+import { getDrivers, createDriver } from "../services/driverService.js";
 
 // ── Filter Select (same as Dashboard/Fleet) ─────────────
 function FilterSelect({ label, options, value, onChange }) {
@@ -30,23 +30,66 @@ function FilterSelect({ label, options, value, onChange }) {
 
 // ── Drivers Page ─────────────────────────────────────
 function Drivers() {
-  const [drivers,        setDrivers]        = useState(DRIVERS);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("All");
-  const [statusFilter,   setStatusFilter]   = useState("All");
-  const [searchQuery,    setSearchQuery]    = useState("");
-  const [drawerOpen,     setDrawerOpen]     = useState(false);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  function handleAddDriver(newDriver) {
-    setDrivers((prev) => [...prev, newDriver]);
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    setLoading(true);
+    try {
+      const data = await getDrivers();
+      setDrivers(data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load drivers.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function handleAddDriver(newDriver) {
+    try {
+      // Map UI form fields to Prisma schema fields
+      let expiryDate = new Date().toISOString();
+      if (newDriver.expiry && newDriver.expiry.includes("/")) {
+        const [month, year] = newDriver.expiry.split("/");
+        expiryDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString();
+      }
+
+      const payload = {
+        name: newDriver.name,
+        licenseNumber: newDriver.licenseNo,
+        licenseCategory: newDriver.category,
+        licenseExpiryDate: expiryDate,
+        contactNumber: newDriver.contact,
+        status: newDriver.status === "Suspended" ? "SUSPENDED" :
+          newDriver.status === "On Trip" ? "ON_TRIP" :
+            newDriver.status === "Off Duty" ? "OFF_DUTY" : "AVAILABLE"
+      };
+
+      const createdDriver = await createDriver(payload);
+      setDrivers((prev) => [createdDriver, ...prev]);
+    } catch (err) {
+      console.error("Failed to add driver:", err);
+      alert("Error adding driver: " + (err.response?.data?.message || err.message));
+    }
   }
 
   // Derived: filtered rows
   const filtered = useMemo(() => {
     return drivers.filter((d) => {
-      const matchCategory = categoryFilter === "All" || d.category === categoryFilter;
-      const matchStatus   = statusFilter   === "All" || d.status   === statusFilter;
-      const matchSearch   = d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            d.licenseNo.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCategory = categoryFilter === "All" || d.licenseCategory === categoryFilter;
+      const matchStatus = statusFilter === "All" || d.status?.replace("_", " ")?.toLowerCase() === statusFilter.toLowerCase();
+      const matchSearch = d.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.licenseNumber?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchCategory && matchStatus && matchSearch;
     });
   }, [drivers, categoryFilter, statusFilter, searchQuery]);
@@ -81,7 +124,7 @@ function Drivers() {
       <div className="flex items-center gap-2 flex-wrap justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <FilterSelect label="Category" options={DRIVER_CATEGORY_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} />
-          <FilterSelect label="Status"   options={DRIVER_STATUS_OPTIONS}   value={statusFilter}   onChange={setStatusFilter} />
+          <FilterSelect label="Status" options={DRIVER_STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
 
           {/* Search */}
           <div className="relative">
@@ -129,30 +172,51 @@ function Drivers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.length > 0 ? (
-                filtered.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
-                    <td className="px-5 py-3.5 font-medium text-slate-800">{d.name}</td>
-                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-600">{d.licenseNo}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{d.category}</td>
-                    <td className="px-5 py-3.5 text-slate-600">
-                      {d.expiry} 
-                      {d.expired && <span className="ml-1 text-[10px] text-red-500 font-bold uppercase">Expired</span>}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-xs text-slate-600">{d.contact}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-medium">{d.tripCompl}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${SAFETY_STATUS_STYLE[d.safetyStatus] || "bg-slate-400 text-white"}`}>
-                        {d.safetyStatus}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${DRIVER_STATUS_STYLE[d.status] || "bg-slate-400 text-white"}`}>
-                        {d.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-400">
+                    Loading drivers...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-12 text-center text-sm text-red-500">
+                    {error}
+                  </td>
+                </tr>
+              ) : filtered.length > 0 ? (
+                filtered.map((d) => {
+                  // Derive safety status from score
+                  const safetyStatus = d.safetyScore >= 90 ? "Excellent" :
+                    d.safetyScore >= 75 ? "Good" :
+                      d.safetyScore >= 60 ? "Warning" : "Critical";
+
+                  const isExpired = new Date(d.licenseExpiryDate) < new Date();
+
+                  return (
+                    <tr key={d.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
+                      <td className="px-5 py-3.5 font-medium text-slate-800">{d.name}</td>
+                      <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-600">{d.licenseNumber}</td>
+                      <td className="px-5 py-3.5 text-slate-600">{d.licenseCategory}</td>
+                      <td className="px-5 py-3.5 text-slate-600">
+                        {new Date(d.licenseExpiryDate).toLocaleDateString('en-GB', { month: '2-digit', year: 'numeric' })}
+                        {isExpired && <span className="ml-1 text-[10px] text-red-500 font-bold uppercase">Expired</span>}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-slate-600">{d.contactNumber}</td>
+                      <td className="px-5 py-3.5 text-slate-600 font-medium">{d.trips?.length || 0}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${SAFETY_STATUS_STYLE[safetyStatus] || "bg-slate-400 text-white"}`}>
+                          {safetyStatus}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${DRIVER_STATUS_STYLE[d.status?.replace("_", " ")] || "bg-slate-400 text-white"}`}>
+                          {d.status?.replace("_", " ")}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-400">

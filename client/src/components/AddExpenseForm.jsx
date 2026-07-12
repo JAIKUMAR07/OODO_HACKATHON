@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { X, Receipt } from "lucide-react";
 
 const EMPTY_FORM = {
-  trip: "",
-  vehicle: "",
-  toll: "",
-  other: "",
-  maint: "0",
-  status: "Completed",
+  tripId: "",
+  vehicleId: "",
+  type: "MISCELLANEOUS",
+  amount: "",
+  status: "PENDING",
 };
 
 function Field({ label, required, children }) {
@@ -25,7 +24,7 @@ function Field({ label, required, children }) {
 const inputCls =
   "w-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-colors";
 
-function AddExpenseForm({ isOpen, onClose, onSave }) {
+function AddExpenseForm({ isOpen, onClose, onSave, vehicles = [], trips = [] }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
@@ -43,8 +42,7 @@ function AddExpenseForm({ isOpen, onClose, onSave }) {
 
   function validate() {
     const errs = {};
-    if (!form.trip.trim()) errs.trip = "Trip is required.";
-    if (!form.vehicle.trim()) errs.vehicle = "Vehicle is required.";
+    if (!form.amount) errs.amount = "Amount is required.";
     return errs;
   }
 
@@ -55,13 +53,7 @@ function AddExpenseForm({ isOpen, onClose, onSave }) {
       setErrors(errs);
       return;
     }
-    onSave({
-      ...form,
-      id: `e${Date.now()}`,
-      toll: form.toll || "0",
-      other: form.other || "0",
-      maint: form.maint || "0",
-    });
+    onSave(form);
     onClose();
   }
 
@@ -100,63 +92,67 @@ function AddExpenseForm({ isOpen, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
           <div className="flex flex-col gap-5 px-6 py-5">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Trip ID" required>
-                <input
-                  type="text"
-                  value={form.trip}
-                  onChange={(e) => handleChange("trip", e.target.value.toUpperCase())}
-                  className={inputCls}
-                  placeholder="e.g. TR005"
-                />
-                {errors.trip && <p className="text-[11px] text-red-500 font-medium">{errors.trip}</p>}
+              <Field label="Trip (Optional)">
+                <div className="relative">
+                  <select
+                    value={form.tripId}
+                    onChange={(e) => handleChange("tripId", e.target.value)}
+                    className={`${inputCls} appearance-none pr-7 cursor-pointer`}
+                  >
+                    <option value="">Select a trip...</option>
+                    {trips.map(t => (
+                      <option key={t.id} value={t.id}>#{t.id.slice(-6)} - {t.source} to {t.destination}</option>
+                    ))}
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
+                </div>
               </Field>
 
-              <Field label="Vehicle" required>
-                <input
-                  type="text"
-                  value={form.vehicle}
-                  onChange={(e) => handleChange("vehicle", e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. VAN-05"
-                />
-                {errors.vehicle && <p className="text-[11px] text-red-500 font-medium">{errors.vehicle}</p>}
+              <Field label="Vehicle (Optional)">
+                <div className="relative">
+                  <select
+                    value={form.vehicleId}
+                    onChange={(e) => handleChange("vehicleId", e.target.value)}
+                    className={`${inputCls} appearance-none pr-7 cursor-pointer`}
+                  >
+                    <option value="">Select a vehicle...</option>
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.id}>{v.name} ({v.registrationNumber})</option>
+                    ))}
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
+                </div>
               </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Toll (₹)">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.toll}
-                  onChange={(e) => handleChange("toll", e.target.value)}
-                  className={inputCls}
-                  placeholder="0"
-                />
+              <Field label="Expense Type" required>
+                <div className="relative">
+                  <select
+                    value={form.type}
+                    onChange={(e) => handleChange("type", e.target.value)}
+                    className={`${inputCls} appearance-none pr-7 cursor-pointer`}
+                  >
+                    <option value="TOLL">Toll</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="MISCELLANEOUS">Miscellaneous</option>
+                  </select>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
+                </div>
               </Field>
 
-              <Field label="Other Misc (₹)">
+              <Field label="Amount (₹)" required>
                 <input
                   type="number"
                   min="0"
-                  value={form.other}
-                  onChange={(e) => handleChange("other", e.target.value)}
+                  value={form.amount}
+                  onChange={(e) => handleChange("amount", e.target.value)}
                   className={inputCls}
                   placeholder="0"
                 />
+                {errors.amount && <p className="text-[11px] text-red-500 font-medium">{errors.amount}</p>}
               </Field>
             </div>
-
-            <Field label="Maintenance Linked (₹)">
-              <input
-                type="number"
-                min="0"
-                value={form.maint}
-                onChange={(e) => handleChange("maint", e.target.value)}
-                className={inputCls}
-                placeholder="0"
-              />
-            </Field>
             
             <Field label="Status" required>
               <div className="relative">
@@ -165,8 +161,9 @@ function AddExpenseForm({ isOpen, onClose, onSave }) {
                   onChange={(e) => handleChange("status", e.target.value)}
                   className={`${inputCls} appearance-none pr-7 cursor-pointer`}
                 >
-                  <option>Available</option>
-                  <option>Completed</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
                 </select>
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
               </div>
