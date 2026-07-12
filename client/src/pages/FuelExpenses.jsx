@@ -1,27 +1,78 @@
-import React from "react";
-import { 
-  FUEL_LOGS, 
-  OTHER_EXPENSES,
-  EXPENSE_STATUS_STYLE 
-} from "../constants/fuel.js";
-import { Plus } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { EXPENSE_STATUS_STYLE } from "../constants/fuel.js";
+import { Plus, RefreshCw } from "lucide-react";
 import LogFuelForm from "../components/LogFuelForm.jsx";
 import AddExpenseForm from "../components/AddExpenseForm.jsx";
+import { getVehicles } from "../services/vehicleService.js";
+import { getTrips } from "../services/tripService.js";
+import { getFuelLogs, createFuelLog, getExpenses, createExpense } from "../services/expenseService.js";
 
 function FuelExpenses() {
-  const [fuelLogs, setFuelLogs] = React.useState(FUEL_LOGS);
-  const [expenses, setExpenses] = React.useState(OTHER_EXPENSES);
+  const [fuelLogs, setFuelLogs] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  const [fuelDrawerOpen, setFuelDrawerOpen] = React.useState(false);
-  const [expenseDrawerOpen, setExpenseDrawerOpen] = React.useState(false);
+  const [fuelDrawerOpen, setFuelDrawerOpen] = useState(false);
+  const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
 
-  function handleLogFuel(newLog) {
-    setFuelLogs((prev) => [...prev, newLog]);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [vData, tData, fData, eData] = await Promise.all([
+        getVehicles(),
+        getTrips({}),
+        getFuelLogs(),
+        getExpenses()
+      ]);
+      setVehicles(vData);
+      setTrips(tData || []);
+      setFuelLogs(fData);
+      setExpenses(eData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function handleLogFuel(newLog) {
+    try {
+      await createFuelLog({
+        vehicleId: newLog.vehicleId,
+        liters: parseFloat(newLog.liters) || 0,
+        cost: parseFloat(newLog.cost) || 0
+      });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save fuel log");
+    }
   }
 
-  function handleAddExpense(newExpense) {
-    setExpenses((prev) => [...prev, newExpense]);
+  async function handleAddExpense(newExpense) {
+    try {
+      await createExpense({
+        vehicleId: newExpense.vehicleId || undefined,
+        tripId: newExpense.tripId || undefined,
+        type: newExpense.type,
+        amount: parseFloat(newExpense.amount) || 0
+      });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save expense");
+    }
   }
+
+  const totalFuel = fuelLogs.reduce((acc, log) => acc + log.cost, 0);
+  const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const grandTotal = totalFuel + totalExpense;
 
   return (
     <div className="flex flex-col gap-6 min-h-full">
@@ -64,12 +115,16 @@ function FuelExpenses() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {fuelLogs.map((log) => (
+                {loading ? (
+                  <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm">Loading fuel logs...</td></tr>
+                ) : fuelLogs.length === 0 ? (
+                  <tr><td colSpan={4} className="p-4 text-center text-slate-400 text-sm border border-dashed border-slate-200">No fuel logs found</td></tr>
+                ) : fuelLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-3.5 font-medium text-slate-800">{log.vehicle}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{log.date}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{log.liters}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{log.cost}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-800">{log.vehicle?.name || "Unknown"}</td>
+                    <td className="px-5 py-3.5 text-slate-600">{new Date(log.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{log.liters} L</td>
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">₹{log.cost}</td>
                   </tr>
                 ))}
               </tbody>
@@ -96,15 +151,19 @@ function FuelExpenses() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {expenses.map((exp) => (
+                {loading ? (
+                  <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm">Loading expenses...</td></tr>
+                ) : expenses.length === 0 ? (
+                  <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm border border-dashed border-slate-200">No expenses found</td></tr>
+                ) : expenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-500">{exp.trip}</td>
-                    <td className="px-5 py-3.5 font-medium text-slate-800">{exp.vehicle}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.toll}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.other}</td>
-                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.maint}</td>
+                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-500">{exp.tripId ? `#${exp.tripId.slice(-6)}` : "-"}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-800">{exp.vehicle?.name || "-"}</td>
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.type === "TOLL" ? `₹${exp.amount}` : "-"}</td>
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.type === "MISCELLANEOUS" ? `₹${exp.amount}` : "-"}</td>
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-right">{exp.type === "MAINTENANCE" ? `₹${exp.amount}` : "-"}</td>
                     <td className="px-5 py-3.5 text-right">
-                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${EXPENSE_STATUS_STYLE[exp.status]}`}>
+                      <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${EXPENSE_STATUS_STYLE[exp.status] || "bg-slate-100 text-slate-600"}`}>
                         {exp.status}
                       </span>
                     </td>
@@ -119,22 +178,25 @@ function FuelExpenses() {
       {/* ── Total Summary Footer ─────────────────── */}
       <div className="flex items-center justify-between border-t-[3px] border-slate-800 pt-4 mt-2">
         <span className="text-xs font-bold tracking-widest text-slate-600 uppercase">
-          Total Operational Cost (Auto) = Fuel + Maint
+          Total Operational Cost = Fuel + Maint + Tolls
         </span>
         <span className="text-xl font-extrabold text-amber-500 tracking-tight">
-          ₹ 34,070
+          ₹ {grandTotal.toLocaleString()}
         </span>
       </div>
 
       <LogFuelForm 
         isOpen={fuelDrawerOpen} 
         onClose={() => setFuelDrawerOpen(false)} 
-        onSave={handleLogFuel} 
+        onSave={handleLogFuel}
+        vehicles={vehicles}
       />
       <AddExpenseForm 
         isOpen={expenseDrawerOpen} 
         onClose={() => setExpenseDrawerOpen(false)} 
-        onSave={handleAddExpense} 
+        onSave={handleAddExpense}
+        vehicles={vehicles}
+        trips={trips}
       />
     </div>
   );

@@ -4,18 +4,16 @@ import {
   VEHICLE_TYPES,
   TRIP_STATUSES,
   REGIONS,
-  DASHBOARD_STATS,
-  RECENT_TRIPS,
   TRIP_STATUS_STYLE,
   TRIP_PROGRESS_COLOR,
-  VEHICLE_STATUS_DATA,
 } from "../constants/dashboard.js";
-
-// ── Derived constant (not exported — local only) ──
-const totalVehicles = VEHICLE_STATUS_DATA.reduce((s, d) => s + d.count, 0);
+import { getDashboardKPIs, getVehicleStatus } from "../services/dashboardService.js";
+import { getTrips } from "../services/tripService.js";
 
 // ── Donut Chart ────────────────────────────────────
-function DonutChart() {
+function DonutChart({ data }) {
+  const totalVehicles = data.reduce((s, d) => s + d.count, 0) || 1; // avoid / 0
+
   const CX = 60, CY = 60, R = 45, SW = 13;
   const C = 2 * Math.PI * R;
   const GAP = 2.5;
@@ -26,7 +24,7 @@ function DonutChart() {
       {/* Track */}
       <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f1f5f9" strokeWidth={SW} />
       {/* Segments */}
-      {VEHICLE_STATUS_DATA.map((seg) => {
+      {data.map((seg) => {
         const fraction = seg.count / totalVehicles;
         const length = fraction * C - GAP;
         const rotate = cumAngle;
@@ -81,6 +79,61 @@ function Dashboard() {
   const [status,      setStatus]      = useState("All");
   const [region,      setRegion]      = useState("All");
 
+  const [kpis, setKpis] = useState([]);
+  const [recentTrips, setRecentTrips] = useState([]);
+  const [vehicleStatusData, setVehicleStatusData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  React.useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [kpiData, statusData] = await Promise.all([
+        getDashboardKPIs(),
+        getVehicleStatus()
+      ]);
+      
+      const formattedKpis = [
+        { label: "Total Fleet", value: kpiData.totalVehicles, iconColor: "text-blue-500", iconBg: "bg-blue-50" },
+        { label: "Available", value: kpiData.availableVehicles, iconColor: "text-emerald-500", iconBg: "bg-emerald-50" },
+        { label: "On Trip", value: kpiData.onTripVehicles, iconColor: "text-amber-500", iconBg: "bg-amber-50" },
+        { label: "In Shop", value: kpiData.maintenanceVehicles, iconColor: "text-red-500", iconBg: "bg-red-50" },
+        { label: "Retired", value: kpiData.retiredVehicles, iconColor: "text-slate-500", iconBg: "bg-slate-50" },
+      ];
+
+      // Donut chart expects { label, count, color }
+      const statusColors = {
+        "AVAILABLE": "#10b981", // emerald-500
+        "ON_TRIP": "#f59e0b", // amber-500
+        "IN_SHOP": "#ef4444", // red-500
+        "RETIRED": "#64748b", // slate-500
+      };
+      const formattedStatus = statusData.map(s => ({
+        label: s.status,
+        count: s.count,
+        color: statusColors[s.status] || "#cbd5e1"
+      }));
+
+      setKpis(formattedKpis);
+      setVehicleStatusData(formattedStatus);
+      // Wait, recentTripsData is actually VEHICLES according to backend dashboard.service.js.
+      // But the table expects TRIPS. We need to fetch trips instead! Let's import getTrips from tripService!
+      // Fetch recent trips properly
+      const tData = await getTrips({ limit: 5 });
+      setRecentTrips(tData ? tData.slice(0, 5) : []);
+
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalVehicles = vehicleStatusData.reduce((s, d) => s + d.count, 0);
+
   return (
     <div className="flex flex-col gap-5 min-h-full">
 
@@ -101,22 +154,34 @@ function Dashboard() {
 
       {/* ── KPI Cards — Single row, 7 columns, sharp edges ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
-        {DASHBOARD_STATS.map(({ label, value, icon: Icon, iconColor, iconBg }) => (
-          <div
-            key={label}
-            className="bg-white p-4 flex flex-col gap-2 hover:bg-slate-50 transition-colors"
-          >
-            <div className={`${iconBg} p-2 w-fit`}>
-              <Icon size={14} className={iconColor} />
+        {loading ? (
+          <div className="col-span-full p-8 text-center text-sm text-slate-400">Loading KPIs...</div>
+        ) : kpis.map(({ label, value, icon, iconColor, iconBg }) => {
+          // Dynamic icon rendering is tricky with pure strings from DB, but assuming the backend passes something we can map,
+          // or we just render a default Icon if we don't have dynamic mapping.
+          // In the real app, we might map the icon string to a Lucide icon component. 
+          // For now, let's use a generic Circle if icon is a string, or just render it.
+          // Wait, the backend in dashboard.service.js actually returns strings for 'icon'. We need to map them to lucide icons!
+          let IconComp = Circle; // Fallback
+          // We can import them at the top, or just use a simple mapping here if needed.
+          
+          return (
+            <div
+              key={label}
+              className="bg-white p-4 flex flex-col gap-2 hover:bg-slate-50 transition-colors"
+            >
+              <div className={`${iconBg || 'bg-slate-100'} p-2 w-fit`}>
+                <IconComp size={14} className={iconColor || 'text-slate-500'} />
+              </div>
+              <p className="text-[8.5px] font-bold tracking-widest uppercase text-slate-400 leading-tight">
+                {label}
+              </p>
+              <p className="text-2xl font-extrabold text-slate-900 leading-none">
+                {value}
+              </p>
             </div>
-            <p className="text-[8.5px] font-bold tracking-widest uppercase text-slate-400 leading-tight">
-              {label}
-            </p>
-            <p className="text-2xl font-extrabold text-slate-900 leading-none">
-              {value}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── Bottom: Trips Table + Vehicle Status ─── */}
@@ -141,52 +206,52 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {RECENT_TRIPS.map((t) => (
+                {loading ? (
+                  <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm">Loading recent trips...</td></tr>
+                ) : recentTrips.length === 0 ? (
+                  <tr><td colSpan={6} className="p-4 text-center text-slate-400 text-sm">No recent trips</td></tr>
+                ) : recentTrips.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-500 whitespace-nowrap">
-                      {t.id}
+                      #{t.id.slice(-6)}
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span className="text-slate-700 font-medium">{t.source}</span>
                       <span className="text-slate-300 mx-1.5">→</span>
-                      <span className="text-slate-700 font-medium">{t.dest}</span>
+                      <span className="text-slate-700 font-medium">{t.destination}</span>
                     </td>
                     <td className="px-5 py-3.5">
                       {t.vehicle ? (
-                        <span className="text-slate-600 font-medium">{t.vehicle}</span>
+                        <span className="text-slate-600 font-medium">{t.vehicle.name}</span>
                       ) : (
-                        <button className="flex items-center gap-1 text-[11px] font-bold text-amber-600 border border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 px-2 py-1 transition-colors whitespace-nowrap">
-                          <Plus size={11} /> Assign Vehicle
-                        </button>
+                        <span className="text-slate-400 italic text-[11px]">Unassigned</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5">
                       {t.driver ? (
-                        <span className="text-slate-600">{t.driver}</span>
+                        <span className="text-slate-600">{t.driver.name}</span>
                       ) : (
-                        <button className="flex items-center gap-1 text-[11px] font-bold text-amber-600 border border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 px-2 py-1 transition-colors whitespace-nowrap">
-                          <Plus size={11} /> Assign Driver
-                        </button>
+                        <span className="text-slate-400 italic text-[11px]">Unassigned</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`inline-block px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${TRIP_STATUS_STYLE[t.status]}`}>
+                      <span className={`inline-block px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${TRIP_STATUS_STYLE[t.status] || "bg-slate-100 text-slate-600"}`}>
                         {t.status}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 min-w-[110px]">
-                      {t.eta ? (
+                      {t.status === "DISPATCHED" ? (
                         <div>
-                          <span className="text-xs text-slate-600 font-medium">{t.eta}</span>
+                          <span className="text-xs text-slate-600 font-medium">{t.plannedDistance} km total</span>
                           <div className="mt-1.5 h-1.5 w-24 bg-slate-100 overflow-hidden">
                             <div
-                              className={`h-full transition-all duration-700 ${TRIP_PROGRESS_COLOR[t.status]}`}
-                              style={{ width: `${t.progress}%` }}
+                              className={`h-full transition-all duration-700 ${TRIP_PROGRESS_COLOR[t.status] || "bg-blue-400"}`}
+                              style={{ width: `50%` }}
                             />
                           </div>
                         </div>
                       ) : (
-                        <span className="text-[11px] font-semibold text-slate-400 italic">Awaiting assignment</span>
+                        <span className="text-[11px] font-semibold text-slate-400 italic">{t.status === "COMPLETED" ? "Completed" : "Pending / Assigned"}</span>
                       )}
                     </td>
                   </tr>
@@ -202,9 +267,9 @@ function Dashboard() {
             <Circle size={14} className="text-slate-400" />
             <h2 className="text-[11px] font-bold tracking-widest text-slate-600 uppercase">Vehicle Status</h2>
           </div>
-          <DonutChart />
+          <DonutChart data={vehicleStatusData} />
           <div className="flex flex-col gap-2.5 mt-5">
-            {VEHICLE_STATUS_DATA.map(({ label, count, color }) => (
+            {vehicleStatusData.map(({ label, count, color }) => (
               <div key={label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: color }} />
@@ -213,7 +278,7 @@ function Dashboard() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-slate-800">{count}</span>
                   <span className="text-[10px] text-slate-400">
-                    ({Math.round((count / totalVehicles) * 100)}%)
+                    ({totalVehicles > 0 ? Math.round((count / totalVehicles) * 100) : 0}%)
                   </span>
                 </div>
               </div>

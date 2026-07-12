@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { 
-  AVAILABLE_VEHICLES, 
-  AVAILABLE_DRIVERS, 
-  LIVE_TRIPS, 
   TRIP_LIFECYCLE_STEPS, 
   TRIP_STATUS_STYLE 
 } from "../constants/trips.js";
-import { X, Check } from "lucide-react";
+import { X, Check, RefreshCw } from "lucide-react";
+import { getVehicles } from "../services/vehicleService.js";
+import { getDrivers } from "../services/driverService.js";
+import { getTrips, createDraftTrip, assignTrip, dispatchTrip } from "../services/tripService.js";
 
 // ── Reusable Field Wrapper ──────────────────────────
 function Field({ label, children }) {
@@ -23,6 +23,13 @@ function Field({ label, children }) {
 const inputCls = "w-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 transition-colors";
 
 function Trips() {
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dispatching, setDispatching] = useState(false);
+  const [error, setError] = useState(null);
+
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [vehicleId, setVehicleId] = useState("");
@@ -30,15 +37,74 @@ function Trips() {
   const [cargoWeight, setCargoWeight] = useState("");
   const [distance, setDistance] = useState("");
 
-  const selectedVehicle = AVAILABLE_VEHICLES.find(v => v.id === vehicleId);
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [vData, dData, tData] = await Promise.all([
+        getVehicles(),
+        getDrivers(),
+        getTrips({})
+      ]);
+      setVehicles(vData.filter(v => v.status === "AVAILABLE"));
+      setDrivers(dData.filter(d => d.status === "AVAILABLE"));
+      
+      // Filter out completed/cancelled trips for the live board
+      const liveTrips = tData.filter(t => t.status !== "COMPLETED" && t.status !== "CANCELLED");
+      setTrips(liveTrips);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dispatcher data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDispatch = async () => {
+    setDispatching(true);
+    try {
+      // 1. Create Draft
+      const draft = await createDraftTrip({
+        source,
+        destination,
+        cargoWeight: parseFloat(cargoWeight),
+        plannedDistance: parseFloat(distance)
+      });
+      // 2. Assign Trip
+      await assignTrip(draft.id, { vehicleId, driverId });
+      // 3. Dispatch Trip
+      await dispatchTrip(draft.id);
+      
+      // Reset form
+      setSource("");
+      setDestination("");
+      setVehicleId("");
+      setDriverId("");
+      setCargoWeight("");
+      setDistance("");
+      
+      // Refresh Data
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to dispatch trip: " + (err.response?.data?.message || err.message));
+    } finally {
+      setDispatching(false);
+    }
+  };
+
+  const selectedVehicle = vehicles.find(v => v.id === vehicleId);
   const weight = parseFloat(cargoWeight) || 0;
   
   let capacityError = null;
-  if (selectedVehicle && weight > selectedVehicle.capacityKg) {
+  if (selectedVehicle && weight > selectedVehicle.maxLoadCapacity) {
     capacityError = {
-      capacity: selectedVehicle.capacityKg,
+      capacity: selectedVehicle.maxLoadCapacity,
       weight: weight,
-      exceededBy: weight - selectedVehicle.capacityKg
+      exceededBy: weight - selectedVehicle.maxLoadCapacity
     };
   }
 
@@ -71,8 +137,8 @@ function Trips() {
               <div className="relative">
                 <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} className={`${inputCls} appearance-none pr-7`}>
                   <option value="">Select a vehicle...</option>
-                  {AVAILABLE_VEHICLES.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} - {v.capacityKg} kg capacity</option>
+                  {vehicles.map(v => (
+                    <option key={v.id} value={v.id}>{v.name} ({v.registrationNumber}) - {v.maxLoadCapacity} kg cap.</option>
                   ))}
                 </select>
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
@@ -83,8 +149,8 @@ function Trips() {
               <div className="relative">
                 <select value={driverId} onChange={(e) => setDriverId(e.target.value)} className={`${inputCls} appearance-none pr-7`}>
                   <option value="">Select a driver...</option>
-                  {AVAILABLE_DRIVERS.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                  {drivers.map(d => (
+                    <option key={d.id} value={d.id}>{d.name} ({d.licenseCategory})</option>
                   ))}
                 </select>
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]">▾</span>
@@ -114,17 +180,23 @@ function Trips() {
             {/* Buttons */}
             <div className="flex items-center gap-3 mt-2">
               <button 
-                disabled={!isFormValid}
-                className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
-                  isFormValid 
+                onClick={handleDispatch}
+                disabled={!isFormValid || dispatching}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-colors ${
+                  isFormValid && !dispatching
                     ? "bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-white" 
                     : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                 }`}
               >
-                Dispatch {isFormValid ? "" : "(disabled)"}
+                {dispatching && <RefreshCw size={14} className="animate-spin" />}
+                {dispatching ? "Dispatching..." : isFormValid ? "Dispatch" : "Dispatch (disabled)"}
               </button>
-              <button className="flex-1 py-2.5 border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors">
-                Cancel
+              <button 
+                onClick={() => {
+                  setSource(""); setDestination(""); setVehicleId(""); setDriverId(""); setCargoWeight(""); setDistance("");
+                }}
+                className="flex-1 py-2.5 border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors">
+                Clear
               </button>
             </div>
           </div>
@@ -155,30 +227,38 @@ function Trips() {
           <div className="flex-1 flex flex-col min-h-0">
             <h2 className="text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-3">Live Board</h2>
             
-            <div className="flex flex-col gap-3">
-              {LIVE_TRIPS.map((trip) => (
-                <div key={trip.id} className="bg-white border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-500">{trip.id}</span>
-                      <span className="text-slate-300">|</span>
-                      <span className="text-xs font-medium text-slate-600">{trip.vehicle} / {trip.driver.toUpperCase()}</span>
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2">
+              {loading ? (
+                <div className="p-8 text-center text-slate-400 text-sm">Loading live board...</div>
+              ) : trips.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-sm border border-dashed border-slate-200">No active trips currently.</div>
+              ) : (
+                trips.map((trip) => (
+                  <div key={trip.id} className="bg-white border border-slate-200 shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-amber-200">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-slate-500">#{trip.id.slice(-6)}</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-xs font-medium text-slate-600">
+                          {trip.vehicle?.name || "Unassigned"} / {trip.driver?.name?.toUpperCase() || "UNASSIGNED"}
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-800 font-medium flex items-center gap-2">
+                        {trip.source} <span className="text-slate-400">→</span> {trip.destination}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-800 font-medium">
-                      {trip.source} <span className="text-slate-400 mx-1">→</span> {trip.destination}
+                    
+                    <div className="flex items-center justify-between md:flex-col md:items-end gap-2 md:gap-1.5 shrink-0">
+                      <span className={`inline-block px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${TRIP_STATUS_STYLE[trip.status] || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+                        {trip.status}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {trip.plannedDistance} km
+                      </span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between md:flex-col md:items-end gap-2 md:gap-1.5 shrink-0">
-                    <span className={`inline-block px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${TRIP_STATUS_STYLE[trip.status]}`}>
-                      {trip.status}
-                    </span>
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      {trip.eta}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             
             <div className="mt-4 pt-4 border-t border-slate-200">

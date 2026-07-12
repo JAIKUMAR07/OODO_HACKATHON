@@ -5,7 +5,7 @@ import Navbar from "./Navbar.jsx";
 
 function AppLayout() {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f7f8fa] font-['Outfit',sans-serif]">
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-['Outfit',sans-serif]">
       {/* ── Left Sidebar ─────────────────────────── */}
       <Sidebar />
 

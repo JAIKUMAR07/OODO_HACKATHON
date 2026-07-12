@@ -1,2 +1,46 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
+
+/* ── Dark Mode Overrides ────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark #root {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+/* Backgrounds */
+html.dark .bg-white { background-color: #1e293b !important; } /* slate-800 */
+html.dark .bg-slate-50 { background-color: #0f172a !important; } /* slate-900 */
+html.dark .bg-slate-100 { background-color: #334155 !important; } /* slate-700 */
+
+/* Borders */
+html.dark .border-slate-200 { border-color: #334155 !important; } /* slate-700 */
+html.dark .border-slate-100 { border-color: #1e293b !important; } /* slate-800 */
+html.dark .border-slate-300 { border-color: #475569 !important; } /* slate-600 */
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b !important; }
+
+/* Text */
+html.dark .text-slate-900 { color: #f8fafc !important; } /* slate-50 */
+html.dark .text-slate-800 { color: #f1f5f9 !important; } /* slate-100 */
+html.dark .text-slate-700 { color: #e2e8f0 !important; } /* slate-200 */
+html.dark .text-slate-600 { color: #cbd5e1 !important; } /* slate-300 */
+html.dark .text-slate-500 { color: #94a3b8 !important; } /* slate-400 */
+html.dark .text-slate-400 { color: #64748b !important; } /* slate-500 */
+html.dark .placeholder\:text-slate-400::placeholder { color: #64748b !important; }
+
+/* Components tweaks for dark mode contrast */
+html.dark input, 
+html.dark select {
+  background-color: #0f172a !important; /* slate-900 */
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4) !important;
+}
