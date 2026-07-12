@@ -8,6 +8,8 @@ import Drivers from "./pages/Drivers.jsx";
 import Trips from "./pages/Trips.jsx";
 import Maintenance from "./pages/Maintenance.jsx";
 import FuelExpenses from "./pages/FuelExpenses.jsx";
+import Analytics from "./pages/Analytics.jsx";
+import Settings from "./pages/Settings.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 
 function App() {
@@ -26,8 +28,8 @@ function App() {
           <Route path="/trips"         element={<Trips />} />
           <Route path="/maintenance"   element={<Maintenance />} />
           <Route path="/fuel-expenses" element={<FuelExpenses />} />
-          <Route path="/analytics"     element={<PlaceholderPage title="Analytics" />} />
-          <Route path="/settings"      element={<PlaceholderPage title="Settings" />} />
+          <Route path="/analytics"     element={<Analytics />} />
+          <Route path="/settings"      element={<Settings />} />
         </Route>
 
         {/* ── Fallback ─────────────────────────────── */}
