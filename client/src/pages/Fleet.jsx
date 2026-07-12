@@ -20,7 +20,7 @@ function FilterSelect({ label, options, value, onChange }) {
         className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o}>{label}: {o}</option>
+          <option key={o} value={o}>{label}: {o}</option>
         ))}
       </select>
       <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -79,6 +79,22 @@ function Fleet() {
     }
   }
 
+  // Compute fleet stats dynamically
+  const fleetStats = useMemo(() => {
+    const total = vehicles.length;
+    const available = vehicles.filter(v => v.status === "AVAILABLE").length;
+    const onTrip = vehicles.filter(v => v.status === "ON_TRIP").length;
+    const inShop = vehicles.filter(v => v.status === "IN_SHOP").length;
+    const retired = vehicles.filter(v => v.status === "RETIRED").length;
+    return [
+      { label: "Total Fleet", value: total },
+      { label: "Available", value: available },
+      { label: "On Trip", value: onTrip },
+      { label: "In Shop", value: inShop },
+      { label: "Retired", value: retired },
+    ];
+  }, [vehicles]);
+
   // Derived: filtered rows
   const filtered = useMemo(() => {
     return vehicles.filter((v) => {
@@ -115,7 +131,7 @@ function Fleet() {
 
       {/* ── KPI Stats Row ─────────────────────────── */}
       <div className="grid grid-cols-5 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
-        {FLEET_STATS.map(({ label, value }) => (
+        {fleetStats.map(({ label, value }) => (
           <div key={label} className="bg-white p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
             <div className="bg-slate-100 p-2">
               <Truck size={14} className="text-slate-500" />
@@ -127,6 +143,7 @@ function Fleet() {
           </div>
         ))}
       </div>
+
 
       {/* ── Filter Bar + Add Button ───────────────── */}
       <div className="flex items-center gap-2 flex-wrap justify-between">
