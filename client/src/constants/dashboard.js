@@ -52,19 +52,20 @@ export const RECENT_TRIPS = [
   { id: "TR004", vehicle: null,      driver: null,    source: "Nagpur", dest: "Mumbai", status: "Draft",      progress: 0,   eta: null },
 ];
 
-// ── Trip Status Styles ─────────────────────────────
+// ── Trip Status Styles (API enum keys) ─────────────
 export const TRIP_STATUS_STYLE = {
-  "On Trip":    "bg-blue-500 text-white",
-  "Completed":  "bg-emerald-500 text-white",
-  "Dispatched": "bg-sky-500 text-white",
-  "Draft":      "bg-slate-300 text-slate-700",
+  DRAFT: "bg-slate-400 text-white",
+  ASSIGNED: "bg-violet-500 text-white",
+  DISPATCHED: "bg-blue-500 text-white",
+  COMPLETED: "bg-emerald-500 text-white",
+  CANCELLED: "bg-red-500 text-white",
 };
 
 export const TRIP_PROGRESS_COLOR = {
-  "On Trip":    "bg-blue-400",
-  "Completed":  "bg-emerald-400",
-  "Dispatched": "bg-sky-400",
-  "Draft":      "bg-slate-200",
+  DISPATCHED: "bg-blue-400",
+  COMPLETED: "bg-emerald-400",
+  ASSIGNED: "bg-violet-400",
+  DRAFT: "bg-slate-300",
 };
 
 // ── Vehicle Status (Donut Chart) ───────────────────

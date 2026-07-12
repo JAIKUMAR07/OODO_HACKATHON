@@ -41,15 +41,24 @@ export const LIVE_TRIPS = [
 ];
 
 export const TRIP_LIFECYCLE_STEPS = [
-  { id: "Draft", label: "Draft", color: "bg-emerald-500" },
-  { id: "Dispatched", label: "Dispatched", color: "bg-blue-500" },
-  { id: "Completed", label: "Completed", color: "bg-slate-300" },
-  { id: "Cancelled", label: "Cancelled", color: "bg-slate-300" },
+  { id: "DRAFT", label: "Draft", color: "bg-emerald-500" },
+  { id: "ASSIGNED", label: "Assigned", color: "bg-violet-500" },
+  { id: "DISPATCHED", label: "Dispatched", color: "bg-blue-500" },
+  { id: "COMPLETED", label: "Completed", color: "bg-slate-400" },
+  { id: "CANCELLED", label: "Cancelled", color: "bg-red-400" },
 ];
 
 export const TRIP_STATUS_STYLE = {
-  "Draft": "bg-slate-400 text-white",
-  "Dispatched": "bg-blue-500 text-white",
-  "Completed": "bg-emerald-500 text-white",
-  "Cancelled": "bg-red-500 text-white",
+  DRAFT: "bg-slate-400 text-white",
+  ASSIGNED: "bg-violet-500 text-white",
+  DISPATCHED: "bg-blue-500 text-white",
+  COMPLETED: "bg-emerald-500 text-white",
+  CANCELLED: "bg-red-500 text-white",
+};
+
+export const TRIP_PROGRESS_COLOR = {
+  DISPATCHED: "bg-blue-400",
+  COMPLETED: "bg-emerald-400",
+  ASSIGNED: "bg-violet-400",
+  DRAFT: "bg-slate-300",
 };
