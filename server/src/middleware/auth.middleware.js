@@ -1,11 +1,12 @@
 import { verifyToken } from "../utils/jwt.js";
 import { prisma } from "../config/db.js";
+import { AppError } from "../utils/AppError.js";
 
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Unauthorized: No token provided" });
+      return next(new AppError("Unauthorized: No token provided", 401));
     }
 
     const token = authHeader.split(" ")[1];
@@ -13,12 +14,12 @@ export const authenticate = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized: User not found" });
+      return next(new AppError("Unauthorized: User not found", 401));
     }
 
     req.user = { id: user.id, email: user.email, role: user.role, name: user.name };
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
+    return next(new AppError("Unauthorized: Invalid or expired token", 401));
   }
 };
