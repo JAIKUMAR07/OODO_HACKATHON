@@ -29,7 +29,12 @@ export default function ForgotPassword() {
     }
   }, [step]);
 
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const getApiBase = () => {
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (!envUrl) return "http://localhost:5000/api";
+    return envUrl.endsWith("/api") ? envUrl : `${envUrl}/api`;
+  };
+  const API_BASE = getApiBase();
 
   // Step 1: Send OTP
   const handleSendOtp = async (e) => {
