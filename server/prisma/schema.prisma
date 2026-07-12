@@ -63,7 +63,8 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // If this user is also a driver, link to their driver profile
-  driver       Driver?
+  driver               Driver?
+  passwordResetTokens  PasswordResetToken[]
 
   @@map("users")
 }
@@ -191,4 +192,15 @@ model Expense {
 
   @@index([vehicleId])
   @@map("expenses")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
 }
