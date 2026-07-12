@@ -6,6 +6,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Fleet from "./pages/Fleet.jsx";
 import Drivers from "./pages/Drivers.jsx";
 import Trips from "./pages/Trips.jsx";
+import Maintenance from "./pages/Maintenance.jsx";
+import FuelExpenses from "./pages/FuelExpenses.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 
 function App() {
@@ -22,8 +24,8 @@ function App() {
           <Route path="/fleet"         element={<Fleet />} />
           <Route path="/drivers"       element={<Drivers />} />
           <Route path="/trips"         element={<Trips />} />
-          <Route path="/maintenance"   element={<PlaceholderPage title="Maintenance" />} />
-          <Route path="/fuel-expenses" element={<PlaceholderPage title="Fuel & Expenses" />} />
+          <Route path="/maintenance"   element={<Maintenance />} />
+          <Route path="/fuel-expenses" element={<FuelExpenses />} />
           <Route path="/analytics"     element={<PlaceholderPage title="Analytics" />} />
           <Route path="/settings"      element={<PlaceholderPage title="Settings" />} />
         </Route>
