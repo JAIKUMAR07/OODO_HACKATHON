@@ -152,7 +152,7 @@ export default function ForgotPassword() {
 
         <div className="my-auto flex items-center justify-center w-full max-w-md self-center">
           <div className="w-full flex flex-col justify-center transition-all duration-300">
-            
+
             {/* Header */}
             <div className="mb-6">
               <div className="flex gap-1.5 mb-4">
