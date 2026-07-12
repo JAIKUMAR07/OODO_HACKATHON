@@ -17,7 +17,7 @@ function Signup() {
     const [signupSuccess, setSignupSuccess] = useState(false);
     const [errorText, setErrorText] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorText("");
 
@@ -28,11 +28,24 @@ function Signup() {
 
         setIsSubmitting(true);
 
-        // Simulate database signup
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password, role }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Registration failed.");
+            }
+
             setSignupSuccess(true);
-        }, 1000);
+        } catch (err) {
+            setErrorText(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
