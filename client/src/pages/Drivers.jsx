@@ -20,7 +20,7 @@ function FilterSelect({ label, options, value, onChange }) {
         className="appearance-none pl-2.5 pr-7 py-1.5 border border-slate-200 bg-white text-xs font-medium text-slate-600 focus:outline-none focus:border-amber-400 transition-all cursor-pointer"
       >
         {options.map((o) => (
-          <option key={o}>{label}: {o}</option>
+          <option key={o} value={o}>{label}: {o}</option>
         ))}
       </select>
       <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -83,6 +83,22 @@ function Drivers() {
     }
   }
 
+  // Compute driver stats dynamically
+  const driverStats = useMemo(() => {
+    const total = drivers.length;
+    const available = drivers.filter(d => d.status === "AVAILABLE").length;
+    const onTrip = drivers.filter(d => d.status === "ON_TRIP").length;
+    const offDuty = drivers.filter(d => d.status === "OFF_DUTY").length;
+    const suspended = drivers.filter(d => d.status === "SUSPENDED").length;
+    return [
+      { label: "Total Drivers", value: total },
+      { label: "Available", value: available },
+      { label: "On Trip", value: onTrip },
+      { label: "Off Duty", value: offDuty },
+      { label: "Suspended", value: suspended },
+    ];
+  }, [drivers]);
+
   // Derived: filtered rows
   const filtered = useMemo(() => {
     return drivers.filter((d) => {
@@ -107,7 +123,7 @@ function Drivers() {
 
       {/* ── KPI Stats Row ─────────────────────────── */}
       <div className="grid grid-cols-5 gap-0 border border-slate-200 divide-x divide-slate-200 shadow-sm">
-        {DRIVER_STATS.map(({ label, value }) => (
+        {driverStats.map(({ label, value }) => (
           <div key={label} className="bg-white p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
             <div className="bg-slate-100 p-2">
               <Users size={14} className="text-slate-500" />
@@ -119,6 +135,7 @@ function Drivers() {
           </div>
         ))}
       </div>
+
 
       {/* ── Filter Bar + Add Button ───────────────── */}
       <div className="flex items-center gap-2 flex-wrap justify-between">
@@ -210,10 +227,11 @@ function Drivers() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${DRIVER_STATUS_STYLE[d.status?.replace("_", " ")] || "bg-slate-400 text-white"}`}>
+                        <span className={`inline-block px-3 py-1 text-[11px] font-bold whitespace-nowrap ${DRIVER_STATUS_STYLE[d.status] || "bg-slate-400 text-white"}`}>
                           {d.status?.replace("_", " ")}
                         </span>
                       </td>
+
                     </tr>
                   );
                 })

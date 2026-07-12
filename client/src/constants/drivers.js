@@ -65,14 +65,17 @@ export const DRIVERS = [
 
 // ── Status Badge Styles ────────────────────────────
 export const DRIVER_STATUS_STYLE = {
-  "Available":  "bg-emerald-500 text-white",
-  "On Trip":    "bg-blue-500   text-white",
-  "Off Duty":   "bg-slate-400  text-white",
-  "Suspended":  "bg-orange-500 text-white",
+  "AVAILABLE":  "bg-emerald-600 text-white",
+  "ON_TRIP":    "bg-blue-600   text-white",
+  "OFF_DUTY":   "bg-slate-500  text-white",
+  "SUSPENDED":  "bg-red-600    text-white",
 };
 
 // ── Safety Status Badge Styles ─────────────────────
 export const SAFETY_STATUS_STYLE = {
-  "Available": "bg-emerald-500 text-white",
-  "Suspended": "bg-orange-500 text-white",
+  "Excellent": "bg-emerald-600 text-white",
+  "Good":      "bg-emerald-500 text-white",
+  "Warning":   "bg-amber-500   text-white",
+  "Critical":  "bg-red-500     text-white",
 };
+
