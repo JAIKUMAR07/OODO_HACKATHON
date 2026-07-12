@@ -1,75 +1,101 @@
-import { vehicleRepository } from "../repositories/vehicle.repository.js";
+import { prisma } from "../config/db.js";
+import { AppError } from "../utils/AppError.js";
 
 export const vehicleService = {
   async registerVehicle(data) {
-    // Rule 1: Registration number must be unique
-    const existing = await vehicleRepository.findByRegistration(data.registrationNumber);
+    const existing = await prisma.vehicle.findUnique({
+      where: { registrationNumber: data.registrationNumber }
+    });
     if (existing) {
-      throw new Error(`Vehicle with registration ${data.registrationNumber} already exists`);
+      throw new AppError(`Vehicle with registration ${data.registrationNumber} already exists`, 409);
     }
 
-    return await vehicleRepository.create(data);
+    return await prisma.vehicle.create({ data });
   },
 
   async getVehicles(query) {
     const page = Math.max(1, parseInt(query.page) || 1);
     const limit = Math.max(1, parseInt(query.limit) || 10);
     const { status, type, search } = query;
+    const skip = (page - 1) * limit;
+    const where = {};
 
-    return await vehicleRepository.findAll({ page, limit, status, type, search });
+    if (status) where.status = status;
+    if (type) where.type = type;
+    if (search) {
+      where.registrationNumber = {
+        contains: search,
+        mode: "insensitive",
+      };
+    }
+
+    const [vehicles, total] = await Promise.all([
+      prisma.vehicle.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.vehicle.count({ where }),
+    ]);
+
+    return { vehicles, total };
   },
 
   async getVehicleById(id) {
-    const vehicle = await vehicleRepository.findById(id);
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) {
-      throw new Error("Vehicle not found");
+      throw new AppError("Vehicle not found", 404);
     }
     return vehicle;
   },
 
   async updateVehicle(id, data) {
-    const vehicle = await vehicleRepository.findById(id);
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) {
-      throw new Error("Vehicle not found");
+      throw new AppError("Vehicle not found", 404);
     }
 
-    // Rule 4: Odometer cannot decrease
     if (data.odometer !== undefined && data.odometer < vehicle.odometer) {
-      throw new Error(`Odometer cannot decrease. Old: ${vehicle.odometer}, New: ${data.odometer}`);
+      throw new AppError(`Odometer cannot decrease. Old: ${vehicle.odometer}, New: ${data.odometer}`, 400);
     }
 
-    // Rule 5: Retired vehicle cannot become ON_TRIP
     if (vehicle.status === "RETIRED" && data.status === "ON_TRIP") {
-      throw new Error("A retired vehicle cannot be assigned to a trip");
+      throw new AppError("A retired vehicle cannot be assigned to a trip", 400);
     }
 
-    return await vehicleRepository.update(id, data);
+    return await prisma.vehicle.update({ where: { id }, data });
   },
 
   async retireVehicle(id) {
-    const vehicle = await vehicleRepository.findById(id);
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) {
-      throw new Error("Vehicle not found");
+      throw new AppError("Vehicle not found", 404);
     }
     
     if (vehicle.status === "RETIRED") {
-      return vehicle; // already retired
+      return vehicle;
     }
 
-    // Soft delete: change status to RETIRED
-    return await vehicleRepository.update(id, { status: "RETIRED" });
+    return await prisma.vehicle.update({
+      where: { id },
+      data: { status: "RETIRED" }
+    });
   },
   
   async changeStatus(id, newStatus) {
-    const vehicle = await vehicleRepository.findById(id);
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) {
-      throw new Error("Vehicle not found");
+      throw new AppError("Vehicle not found", 404);
     }
     
     if (vehicle.status === "RETIRED" && newStatus === "ON_TRIP") {
-      throw new Error("A retired vehicle cannot be assigned to a trip");
+      throw new AppError("A retired vehicle cannot be assigned to a trip", 400);
     }
 
-    return await vehicleRepository.update(id, { status: newStatus });
+    return await prisma.vehicle.update({
+      where: { id },
+      data: { status: newStatus }
+    });
   }
 };

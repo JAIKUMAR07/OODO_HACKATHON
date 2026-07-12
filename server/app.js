@@ -3,6 +3,8 @@ import cors from "cors";
 import authRoutes from "./src/routes/auth.routes.js";
 import vehicleRoutes from "./src/routes/vehicle.routes.js";
 import dashboardRoutes from "./src/routes/dashboard.routes.js";
+import tripRoutes from "./src/routes/trip.routes.js";
+import driverRoutes from "./src/routes/driver.routes.js";
 
 const app = express();
 
@@ -13,6 +15,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/trips", tripRoutes);
+app.use("/api/drivers", driverRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
@@ -20,10 +24,16 @@ app.get("/", (req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || "Internal Server Error",
-    error: process.env.NODE_ENV === "production" ? {} : err
+  const statusCode = err.statusCode || 500;
+  const message = err.isOperational ? err.message : "Internal Server Error";
+  
+  if (!err.isOperational) {
+    console.error(err);
+  }
+
+  res.status(statusCode).json({
+    message,
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack })
   });
 });
 

@@ -26,9 +26,6 @@ export const getSingleVehicle = async (req, res, next) => {
     const vehicle = await vehicleService.getVehicleById(req.params.id);
     res.json(vehicle);
   } catch (error) {
-    if (error.message === "Vehicle not found") {
-      return res.status(404).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -38,12 +35,6 @@ export const updateVehicle = async (req, res, next) => {
     const vehicle = await vehicleService.updateVehicle(req.params.id, req.body);
     res.json(vehicle);
   } catch (error) {
-    if (error.message === "Vehicle not found") {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes("Odometer cannot decrease") || error.message.includes("retired vehicle cannot be assigned")) {
-      return res.status(400).json({ message: error.message });
-    }
     next(error);
   }
 };

@@ -1,13 +1,9 @@
+import { AppError } from "../utils/AppError.js";
+
 export const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({ message: "Forbidden: No role found on user" });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        message: `Forbidden: Access denied for role ${req.user.role}` 
-      });
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return next(new AppError("Forbidden: You do not have permission", 403));
     }
 
     next();

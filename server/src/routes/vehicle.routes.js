@@ -1,7 +1,8 @@
 import express from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
-import { validate, createVehicleSchema, updateVehicleSchema } from "../validators/vehicle.validator.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { createVehicleSchema, updateVehicleSchema } from "../validators/vehicle.validator.js";
 import {
   createVehicle,
   getVehicles,

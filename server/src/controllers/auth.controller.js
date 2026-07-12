@@ -3,24 +3,25 @@ import crypto from "crypto";
 import { prisma } from "../config/db.js";
 import { signToken } from "../utils/jwt.js";
 import { sendOtpEmail } from "../utils/email.js";
+import { AppError } from "../utils/AppError.js";
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "All fields are required." });
+      throw new AppError("All fields are required.", 400);
     }
 
     const validRoles = ["FLEET_MANAGER", "DRIVER", "SAFETY_OFFICER", "FINANCIAL_ANALYST"];
     if (!validRoles.includes(role)) {
-      return res.status(400).json({ message: "Invalid role." });
+      throw new AppError("Invalid role.", 400);
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return res.status(409).json({ message: "Email already registered." });
+      throw new AppError("Email already registered.", 409);
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -38,28 +39,27 @@ export const register = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("[REGISTER ERROR]", error);
-    return res.status(500).json({ message: "Internal server error." });
+    next(error);
   }
 };
 
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      throw new AppError("Email and password are required.", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      throw new AppError("Invalid email or password.", 401);
     }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      throw new AppError("Invalid email or password.", 401);
     }
 
     const token = signToken({ id: user.id, email: user.email, role: user.role });
@@ -70,17 +70,16 @@ export const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("[LOGIN ERROR]", error);
-    return res.status(500).json({ message: "Internal server error." });
+    next(error);
   }
 };
 
 // ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
-export const forgotPassword = async (req, res) => {
+export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ message: "Email is required." });
+      throw new AppError("Email is required.", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -89,8 +88,8 @@ export const forgotPassword = async (req, res) => {
       return res.status(200).json({ message: "If that email exists, an OTP has been sent." });
     }
 
-    // Generate 6-digit OTP
-    const otp = crypto.randomInt(100000, 999999).toString();
+    // Generate 6-digit OTP safely
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any existing tokens for this user
@@ -107,22 +106,21 @@ export const forgotPassword = async (req, res) => {
 
     return res.status(200).json({ message: "If that email exists, an OTP has been sent." });
   } catch (error) {
-    console.error("[FORGOT PASSWORD ERROR]", error);
-    return res.status(500).json({ message: "Internal server error." });
+    next(error);
   }
 };
 
 // ─── VERIFY OTP ──────────────────────────────────────────────────────────────
-export const verifyOtp = async (req, res) => {
+export const verifyOtp = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required." });
+      throw new AppError("Email and OTP are required.", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(400).json({ message: "Invalid OTP." });
+      throw new AppError("Invalid OTP.", 400);
     }
 
     const resetToken = await prisma.passwordResetToken.findFirst({
@@ -131,36 +129,35 @@ export const verifyOtp = async (req, res) => {
     });
 
     if (!resetToken) {
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      throw new AppError("OTP has expired. Please request a new one.", 400);
     }
 
     const isValid = await bcrypt.compare(otp, resetToken.token);
     if (!isValid) {
-      return res.status(400).json({ message: "Invalid OTP." });
+      throw new AppError("Invalid OTP.", 400);
     }
 
     return res.status(200).json({ message: "OTP verified successfully." });
   } catch (error) {
-    console.error("[VERIFY OTP ERROR]", error);
-    return res.status(500).json({ message: "Internal server error." });
+    next(error);
   }
 };
 
 // ─── RESET PASSWORD ──────────────────────────────────────────────────────────
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
     if (!email || !otp || !newPassword) {
-      return res.status(400).json({ message: "All fields are required." });
+      throw new AppError("All fields are required.", 400);
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters." });
+      throw new AppError("Password must be at least 6 characters.", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(400).json({ message: "Invalid request." });
+      throw new AppError("Invalid request.", 400);
     }
 
     const resetToken = await prisma.passwordResetToken.findFirst({
@@ -169,12 +166,12 @@ export const resetPassword = async (req, res) => {
     });
 
     if (!resetToken) {
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      throw new AppError("OTP has expired. Please request a new one.", 400);
     }
 
     const isValid = await bcrypt.compare(otp, resetToken.token);
     if (!isValid) {
-      return res.status(400).json({ message: "Invalid OTP." });
+      throw new AppError("Invalid OTP.", 400);
     }
 
     // Update password
@@ -186,7 +183,6 @@ export const resetPassword = async (req, res) => {
 
     return res.status(200).json({ message: "Password reset successfully." });
   } catch (error) {
-    console.error("[RESET PASSWORD ERROR]", error);
-    return res.status(500).json({ message: "Internal server error." });
+    next(error);
   }
 };

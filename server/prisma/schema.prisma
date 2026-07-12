@@ -5,8 +5,7 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 // ENUMS
@@ -34,6 +33,7 @@ enum DriverStatus {
 
 enum TripStatus {
   DRAFT
+  ASSIGNED
   DISPATCHED
   COMPLETED
   CANCELLED
@@ -114,16 +114,17 @@ model Driver {
 model Trip {
   id              String     @id @default(uuid())
 
-  vehicleId       String
-  vehicle         Vehicle    @relation(fields: [vehicleId], references: [id])
+  vehicleId       String?
+  vehicle         Vehicle?   @relation(fields: [vehicleId], references: [id])
 
-  driverId        String
-  driver          Driver     @relation(fields: [driverId], references: [id])
+  driverId        String?
+  driver          Driver?    @relation(fields: [driverId], references: [id])
 
   source          String
   destination     String
   cargoWeight     Float      // must be <= vehicle.maxLoadCapacity, checked in app layer
   plannedDistance Float
+  actualDistance  Float?
 
   startOdometer   Float?
   endOdometer     Float?

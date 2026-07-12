@@ -1,11 +1,13 @@
-import { vehicleRepository } from "../repositories/vehicle.repository.js";
+import { prisma } from "../config/db.js";
 
 export const dashboardService = {
   async getDashboardKPIs() {
-    const totalVehicles = await vehicleRepository.countTotal();
-    const statusCounts = await vehicleRepository.countByStatus();
+    const totalVehicles = await prisma.vehicle.count();
+    const statusCounts = await prisma.vehicle.groupBy({
+      by: ['status'],
+      _count: { _all: true }
+    });
 
-    // Initialize with 0
     let availableVehicles = 0;
     let onTripVehicles = 0;
     let maintenanceVehicles = 0;
@@ -28,7 +30,10 @@ export const dashboardService = {
   },
 
   async getVehicleStatusChart() {
-    const statusCounts = await vehicleRepository.countByStatus();
+    const statusCounts = await prisma.vehicle.groupBy({
+      by: ['status'],
+      _count: { _all: true }
+    });
     
     return statusCounts.map(item => ({
       status: item.status,
@@ -37,6 +42,16 @@ export const dashboardService = {
   },
 
   async getRecentVehicles(limit = 5) {
-    return await vehicleRepository.getRecent(limit);
+    return await prisma.vehicle.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        registrationNumber: true,
+        status: true,
+        createdAt: true
+      }
+    });
   }
 };
